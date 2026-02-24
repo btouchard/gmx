@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"gmx/internal/compiler/generator"
 	"gmx/internal/compiler/lexer"
@@ -11,12 +12,20 @@ import (
 )
 
 func main() {
-	if len(os.Args) < 2 {
-		fmt.Println("Usage: gmx <input.gmx>")
+	var outputFile string
+	flag.StringVar(&outputFile, "o", "main.go", "output file path")
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr, "Usage: gmx [-o output.go] <input.gmx>\n\nFlags:\n")
+		flag.PrintDefaults()
+	}
+	flag.Parse()
+
+	if flag.NArg() < 1 {
+		flag.Usage()
 		os.Exit(1)
 	}
 
-	inputFile := os.Args[1]
+	inputFile := flag.Arg(0)
 	data, err := os.ReadFile(inputFile)
 	if err != nil {
 		fmt.Printf("Error reading file: %v\n", err)
@@ -81,10 +90,12 @@ func main() {
 		}
 	}
 
-	// Determine output file
-	outputFile := "main.go"
-	if len(os.Args) > 2 {
-		outputFile = os.Args[2]
+	// Create parent directories if needed
+	if dir := filepath.Dir(outputFile); dir != "." {
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			fmt.Printf("Error creating output directory: %v\n", err)
+			os.Exit(1)
+		}
 	}
 
 	// Write to file
