@@ -1,0 +1,52 @@
+package main
+import (
+	"fmt"
+	"strings"
+	"gmx/internal/compiler/generator"
+	"gmx/internal/compiler/lexer"
+	gmxparser "gmx/internal/compiler/parser"
+)
+func main() {
+	input := `model User {
+  id: uuid @pk
+  email: string @unique
+  posts: Post[]
+}
+model Post {
+  id: uuid @pk
+  title: string
+  user: User @relation(references: [id])
+}
+<template>
+<section id="feed">
+  {{range .Posts}}
+    <div class="card">{{.Title}}</div>
+  {{end}}
+</section>
+</template>
+<style>
+  .card { padding: 1rem; }
+</style>`
+
+	l := lexer.New(input)
+	p := gmxparser.New(l)
+	file := p.ParseGMXFile()
+	gen := generator.New()
+	code, _ := gen.Generate(file)
+	
+	// Check exact search
+	fmt.Println("Contains 'Users []User' (no spaces):", strings.Contains(code, "Users []User"))
+	
+	// Find and print PageData
+	idx := strings.Index(code, "type PageData")
+	if idx != -1 {
+		end := strings.Index(code[idx:], "\n}")
+		if end != -1 {
+			pageData := code[idx:idx+end+2]
+			fmt.Println("\nGenerated PageData struct:")
+			fmt.Println(pageData)
+			fmt.Println("\nSearching for 'Users []User'...")
+			fmt.Println("Found:", strings.Contains(pageData, "Users []User"))
+		}
+	}
+}

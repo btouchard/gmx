@@ -1,0 +1,41 @@
+model Task {
+  id:         uuid    @pk @default(uuid_v4)
+  title:      string  @min(3) @max(255)
+  done:       bool    @default(false)
+  tenant_id:  uuid    @scoped
+  author:     User    @relation(references: [id])
+}
+
+model User {
+  id:    uuid    @pk @default(uuid_v4)
+  email: string  @unique @email
+  tasks: Task[]
+}
+
+---
+
+func toggleTask(w http.ResponseWriter, r *http.Request) error {
+    id := chi.URLParam(r, "id")
+    task, err := models.TaskByID(r.Context(), id)
+    if err != nil { return err }
+    task.Done = !task.Done
+    return task.Save(r.Context())
+}
+
+---
+
+<template>
+  <div class="task-item" id="task-{{.ID}}">
+    <span>{{.Title}}</span>
+    <button hx-patch="{{route "toggleTask" .ID}}" hx-target="closest .task-item" hx-swap="outerHTML">
+      {{if .Done}}Undo{{else}}Done{{end}}
+    </button>
+  </div>
+</template>
+
+---
+
+<style scoped>
+  .task-item { padding: 1rem; border-bottom: 1px solid #eee; }
+  .completed { opacity: 0.5; }
+</style>

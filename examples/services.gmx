@@ -1,0 +1,12 @@
+--- service ---
+service Database {
+  provider: "postgres"
+  url:      string @env("DATABASE_URL")
+}
+
+service Mailer {
+  provider: "smtp"
+  host:     string @env("SMTP_HOST")
+  pass:     string @env("SMTP_PASS")
+  func send(to: string, subject: string, body: string) error
+}

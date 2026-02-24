@@ -1,0 +1,64 @@
+site_name: GMX Documentation
+site_description: "GMX — Go + HTMX Transpiler Framework"
+site_url: https://gmx-lang.dev
+repo_url: https://github.com/kolapsis/gmx
+repo_name: kolapsis/gmx
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Light mode
+  features:
+    - navigation.sections
+    - navigation.expand
+    - navigation.tabs
+    - content.code.copy
+    - content.code.annotate
+    - search.highlight
+
+nav:
+  - Home: index.md
+  - Guide:
+    - Getting Started: guide/getting-started.md
+    - Components: guide/components.md
+    - Models: guide/models.md
+    - Script: guide/script.md
+    - Templates: guide/templates.md
+    - Services: guide/services.md
+    - Security: guide/security.md
+  - Contributing:
+    - Architecture: contributing/architecture.md
+    - AST: contributing/ast.md
+    - Lexer & Parser: contributing/lexer-parser.md
+    - Generator: contributing/generator.md
+    - Script Transpiler: contributing/script-transpiler.md
+    - Testing: contributing/testing.md
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - admonition
+  - pymdownx.details
+  - attr_list
+  - md_in_html
+  - toc:
+      permalink: true
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/kolapsis/gmx
