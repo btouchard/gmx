@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"gmx/internal/compiler/ast"
+	"github.com/btouchard/gmx/internal/compiler/ast"
 )
 
 func TestTranspileLetStatement(t *testing.T) {

@@ -2,8 +2,8 @@ package generator
 
 import (
 	"fmt"
-	"gmx/internal/compiler/ast"
-	"gmx/internal/compiler/resolver"
+	"github.com/btouchard/gmx/internal/compiler/ast"
+	"github.com/btouchard/gmx/internal/compiler/resolver"
 	"regexp"
 	"strings"
 )

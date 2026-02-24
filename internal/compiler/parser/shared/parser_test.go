@@ -1,7 +1,7 @@
 package shared
 
 import (
-	"gmx/internal/compiler/lexer"
+	"github.com/btouchard/gmx/internal/compiler/lexer"
 	"testing"
 )
 

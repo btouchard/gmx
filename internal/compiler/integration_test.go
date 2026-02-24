@@ -6,9 +6,9 @@ import (
 	"strings"
 	"testing"
 
-	"gmx/internal/compiler/generator"
-	"gmx/internal/compiler/lexer"
-	gmxparser "gmx/internal/compiler/parser"
+	"github.com/btouchard/gmx/internal/compiler/generator"
+	"github.com/btouchard/gmx/internal/compiler/lexer"
+	gmxparser "github.com/btouchard/gmx/internal/compiler/parser"
 )
 
 // TestFullPipeline tests the complete compilation pipeline

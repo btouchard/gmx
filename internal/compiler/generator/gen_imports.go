@@ -2,7 +2,7 @@ package generator
 
 import (
 	"fmt"
-	"gmx/internal/compiler/ast"
+	"github.com/btouchard/gmx/internal/compiler/ast"
 	"strings"
 )
 

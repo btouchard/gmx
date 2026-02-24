@@ -2,10 +2,10 @@ package script
 
 import (
 	"fmt"
-	"gmx/internal/compiler/ast"
-	"gmx/internal/compiler/lexer"
-	"gmx/internal/compiler/parser/shared"
-	"gmx/internal/compiler/token"
+	"github.com/btouchard/gmx/internal/compiler/ast"
+	"github.com/btouchard/gmx/internal/compiler/lexer"
+	"github.com/btouchard/gmx/internal/compiler/parser/shared"
+	"github.com/btouchard/gmx/internal/compiler/token"
 	"strings"
 	"unicode"
 )

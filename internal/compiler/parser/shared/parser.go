@@ -2,8 +2,8 @@ package shared
 
 import (
 	"fmt"
-	"gmx/internal/compiler/lexer"
-	"gmx/internal/compiler/token"
+	"github.com/btouchard/gmx/internal/compiler/lexer"
+	"github.com/btouchard/gmx/internal/compiler/token"
 )
 
 // ParserCore contains shared parsing utilities used by both main parser and script parser

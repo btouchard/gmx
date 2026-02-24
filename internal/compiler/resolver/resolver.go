@@ -6,9 +6,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"gmx/internal/compiler/ast"
-	"gmx/internal/compiler/lexer"
-	"gmx/internal/compiler/parser"
+	"github.com/btouchard/gmx/internal/compiler/ast"
+	"github.com/btouchard/gmx/internal/compiler/lexer"
+	"github.com/btouchard/gmx/internal/compiler/parser"
 )
 
 // ComponentInfo stores metadata about an imported component

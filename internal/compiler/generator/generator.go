@@ -2,9 +2,9 @@ package generator
 
 import (
 	"fmt"
-	"gmx/internal/compiler/ast"
-	"gmx/internal/compiler/resolver"
-	"gmx/internal/compiler/script"
+	"github.com/btouchard/gmx/internal/compiler/ast"
+	"github.com/btouchard/gmx/internal/compiler/resolver"
+	"github.com/btouchard/gmx/internal/compiler/script"
 	"go/format"
 	"strings"
 )

@@ -6,9 +6,9 @@ import (
 	"strings"
 	"testing"
 
-	"gmx/internal/compiler/ast"
-	"gmx/internal/compiler/lexer"
-	"gmx/internal/compiler/parser"
+	"github.com/btouchard/gmx/internal/compiler/ast"
+	"github.com/btouchard/gmx/internal/compiler/lexer"
+	"github.com/btouchard/gmx/internal/compiler/parser"
 )
 
 // Helper to parse a .gmx file for testing

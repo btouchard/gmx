@@ -2,8 +2,8 @@ package shared
 
 import (
 	"fmt"
-	"gmx/internal/compiler/ast"
-	"gmx/internal/compiler/token"
+	"github.com/btouchard/gmx/internal/compiler/ast"
+	"github.com/btouchard/gmx/internal/compiler/token"
 )
 
 // ParseModelDecl parses: model Task { ... }

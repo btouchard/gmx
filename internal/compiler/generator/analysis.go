@@ -1,7 +1,7 @@
 package generator
 
 import (
-	"gmx/internal/compiler/ast"
+	"github.com/btouchard/gmx/internal/compiler/ast"
 )
 
 // hasAnnotationMatch scans all fields of all models and returns true

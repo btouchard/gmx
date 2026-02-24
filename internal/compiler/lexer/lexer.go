@@ -1,7 +1,7 @@
 package lexer
 
 import (
-	"gmx/internal/compiler/token"
+	"github.com/btouchard/gmx/internal/compiler/token"
 	"strings"
 	"unicode"
 	"unicode/utf8"

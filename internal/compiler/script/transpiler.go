@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"gmx/internal/compiler/ast"
-	"gmx/internal/compiler/utils"
+	"github.com/btouchard/gmx/internal/compiler/ast"
+	"github.com/btouchard/gmx/internal/compiler/utils"
 )
 
 // SourceMap tracks line mappings from generated Go code to original GMX Script

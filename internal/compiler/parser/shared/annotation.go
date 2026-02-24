@@ -1,8 +1,8 @@
 package shared
 
 import (
-	"gmx/internal/compiler/ast"
-	"gmx/internal/compiler/token"
+	"github.com/btouchard/gmx/internal/compiler/ast"
+	"github.com/btouchard/gmx/internal/compiler/token"
 	"strings"
 )
 

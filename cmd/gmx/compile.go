@@ -2,10 +2,10 @@ package main
 
 import (
 	"fmt"
-	"gmx/internal/compiler/generator"
-	"gmx/internal/compiler/lexer"
-	"gmx/internal/compiler/parser"
-	"gmx/internal/compiler/resolver"
+	"github.com/btouchard/gmx/internal/compiler/generator"
+	"github.com/btouchard/gmx/internal/compiler/lexer"
+	"github.com/btouchard/gmx/internal/compiler/parser"
+	"github.com/btouchard/gmx/internal/compiler/resolver"
 	"os"
 	"path/filepath"
 	"strings"

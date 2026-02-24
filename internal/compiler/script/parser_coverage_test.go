@@ -1,7 +1,7 @@
 package script
 
 import (
-	"gmx/internal/compiler/ast"
+	"github.com/btouchard/gmx/internal/compiler/ast"
 	"testing"
 )
 

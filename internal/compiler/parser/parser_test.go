@@ -1,8 +1,8 @@
 package parser
 
 import (
-	"gmx/internal/compiler/ast"
-	"gmx/internal/compiler/lexer"
+	"github.com/btouchard/gmx/internal/compiler/ast"
+	"github.com/btouchard/gmx/internal/compiler/lexer"
 	"strings"
 	"testing"
 	"time"

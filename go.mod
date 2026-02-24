@@ -1,4 +1,4 @@
-module gmx
+module github.com/btouchard/gmx
 
 go 1.24.5
 

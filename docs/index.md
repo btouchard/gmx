@@ -166,4 +166,4 @@ GMX is currently in **active development**. The compiler is functional with 81% 
 
 ## License
 
-[MIT License](https://github.com/btouchard/gmx/blob/main/LICENSE)
+[Apache License 2.0](https://github.com/btouchard/gmx/blob/main/LICENSE)
