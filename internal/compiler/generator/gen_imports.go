@@ -1,6 +1,7 @@
 package generator
 
 import (
+	"fmt"
 	"gmx/internal/compiler/ast"
 	"strings"
 )
@@ -8,6 +9,25 @@ import (
 // genImports generates the import block
 func (g *Generator) genImports(file *ast.GMXFile) string {
 	var b strings.Builder
+
+	// First, generate GMX import comments (before the Go import block)
+	if len(file.Imports) > 0 {
+		b.WriteString("// ========== GMX Imports ==========\n")
+		for _, imp := range file.Imports {
+			if imp.IsNative {
+				// Native Go imports will be added to the import block below
+				b.WriteString(fmt.Sprintf("// Native Go import: %s as %s\n", imp.Path, imp.Alias))
+			} else if imp.Default != "" {
+				// Component import (Vue-style default import)
+				b.WriteString(fmt.Sprintf("// TODO: Component import: %s from %s\n", imp.Default, imp.Path))
+			} else if len(imp.Members) > 0 {
+				// Destructured import
+				membersStr := strings.Join(imp.Members, ", ")
+				b.WriteString(fmt.Sprintf("// TODO: Destructured import: %s from %s\n", membersStr, imp.Path))
+			}
+		}
+		b.WriteString("\n")
+	}
 
 	b.WriteString("import (\n")
 
@@ -72,6 +92,14 @@ func (g *Generator) genImports(file *ast.GMXFile) string {
 		} else {
 			// Default to SQLite for backward compatibility
 			b.WriteString("\t\"gorm.io/driver/sqlite\"\n")
+		}
+	}
+
+	// Add native Go imports from GMX import declarations
+	for _, imp := range file.Imports {
+		if imp.IsNative {
+			// Generate: import Alias "package/path"
+			b.WriteString(fmt.Sprintf("\t%s \"%s\"\n", imp.Alias, imp.Path))
 		}
 	}
 

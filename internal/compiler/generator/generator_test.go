@@ -1965,3 +1965,445 @@ func TestGenHandlersWithDifferentParamTypes(t *testing.T) {
 		t.Error("Expected FormValue fallback for id")
 	}
 }
+
+// ========== VARIABLE GENERATION TESTS ==========
+
+func TestGenVarsWithConst(t *testing.T) {
+	file := &ast.GMXFile{
+		Vars: []*ast.VarDecl{
+			{
+				Name:    "MAX_RETRIES",
+				Type:    "",
+				Value:   &ast.IntLit{Value: "5"},
+				IsConst: true,
+			},
+		},
+	}
+
+	gen := New()
+	code, err := gen.Generate(file)
+	if err != nil {
+		t.Fatalf("Generate failed: %v", err)
+	}
+
+	if !isValidGo(code) {
+		t.Errorf("Generated code is not valid Go:\n%s", code)
+	}
+
+	// Should generate const declaration
+	if !strings.Contains(code, "const MAX_RETRIES = 5") {
+		t.Error("Generated code missing const MAX_RETRIES = 5")
+	}
+}
+
+func TestGenVarsWithLetAndExplicitType(t *testing.T) {
+	file := &ast.GMXFile{
+		Vars: []*ast.VarDecl{
+			{
+				Name:    "requestCount",
+				Type:    "int",
+				Value:   &ast.IntLit{Value: "0"},
+				IsConst: false,
+			},
+		},
+	}
+
+	gen := New()
+	code, err := gen.Generate(file)
+	if err != nil {
+		t.Fatalf("Generate failed: %v", err)
+	}
+
+	if !isValidGo(code) {
+		t.Errorf("Generated code is not valid Go:\n%s", code)
+	}
+
+	// Should generate var declaration with explicit type
+	if !strings.Contains(code, "var requestCount int = 0") {
+		t.Error("Generated code missing var requestCount int = 0")
+	}
+}
+
+func TestGenVarsWithInferredType(t *testing.T) {
+	file := &ast.GMXFile{
+		Vars: []*ast.VarDecl{
+			{
+				Name:    "debug",
+				Type:    "",
+				Value:   &ast.BoolLit{Value: false},
+				IsConst: false,
+			},
+		},
+	}
+
+	gen := New()
+	code, err := gen.Generate(file)
+	if err != nil {
+		t.Fatalf("Generate failed: %v", err)
+	}
+
+	if !isValidGo(code) {
+		t.Errorf("Generated code is not valid Go:\n%s", code)
+	}
+
+	// Should generate var declaration with inferred type or explicit bool type
+	if !strings.Contains(code, "var debug = false") && !strings.Contains(code, "var debug bool = false") {
+		t.Errorf("Generated code missing var debug declaration, got:\n%s", code)
+	}
+}
+
+func TestGenVarsWithStringConst(t *testing.T) {
+	file := &ast.GMXFile{
+		Vars: []*ast.VarDecl{
+			{
+				Name:    "API_VERSION",
+				Type:    "",
+				Value:   &ast.StringLit{Value: "v2"},
+				IsConst: true,
+			},
+		},
+	}
+
+	gen := New()
+	code, err := gen.Generate(file)
+	if err != nil {
+		t.Fatalf("Generate failed: %v", err)
+	}
+
+	if !isValidGo(code) {
+		t.Errorf("Generated code is not valid Go:\n%s", code)
+	}
+
+	// Should generate const declaration with quoted string
+	if !strings.Contains(code, `const API_VERSION = "v2"`) {
+		t.Error(`Generated code missing const API_VERSION = "v2"`)
+	}
+}
+
+func TestGenMultipleVars(t *testing.T) {
+	file := &ast.GMXFile{
+		Vars: []*ast.VarDecl{
+			{
+				Name:    "MAX_RETRIES",
+				Type:    "",
+				Value:   &ast.IntLit{Value: "5"},
+				IsConst: true,
+			},
+			{
+				Name:    "API_VERSION",
+				Type:    "",
+				Value:   &ast.StringLit{Value: "v2"},
+				IsConst: true,
+			},
+			{
+				Name:    "requestCount",
+				Type:    "int",
+				Value:   &ast.IntLit{Value: "0"},
+				IsConst: false,
+			},
+		},
+	}
+
+	gen := New()
+	code, err := gen.Generate(file)
+	if err != nil {
+		t.Fatalf("Generate failed: %v", err)
+	}
+
+	if !isValidGo(code) {
+		t.Errorf("Generated code is not valid Go:\n%s", code)
+	}
+
+	// Should have all three variables
+	if !strings.Contains(code, "const MAX_RETRIES = 5") {
+		t.Error("Generated code missing const MAX_RETRIES = 5")
+	}
+	if !strings.Contains(code, `const API_VERSION = "v2"`) {
+		t.Error(`Generated code missing const API_VERSION = "v2"`)
+	}
+	if !strings.Contains(code, "var requestCount int = 0") {
+		t.Error("Generated code missing var requestCount int = 0")
+	}
+}
+
+func TestGenVarsWithModelsAndFuncs(t *testing.T) {
+	file := &ast.GMXFile{
+		Vars: []*ast.VarDecl{
+			{
+				Name:    "MAX_RETRIES",
+				Type:    "",
+				Value:   &ast.IntLit{Value: "5"},
+				IsConst: true,
+			},
+		},
+		Models: []*ast.ModelDecl{
+			{
+				Name: "Task",
+				Fields: []*ast.FieldDecl{
+					{Name: "id", Type: "uuid", Annotations: []*ast.Annotation{{Name: "pk"}}},
+				},
+			},
+		},
+		Script: &ast.ScriptBlock{
+			Funcs: []*ast.FuncDecl{
+				{
+					Name:   "getTask",
+					Params: []*ast.Param{{Name: "id", Type: "uuid"}},
+					Body:   []ast.Statement{},
+				},
+			},
+		},
+	}
+
+	gen := New()
+	code, err := gen.Generate(file)
+	if err != nil {
+		t.Fatalf("Generate failed: %v", err)
+	}
+
+	if !isValidGo(code) {
+		t.Errorf("Generated code is not valid Go:\n%s", code)
+	}
+
+	// Should have variables section before models
+	varsIndex := strings.Index(code, "Variables")
+	modelsIndex := strings.Index(code, "Models")
+
+	if varsIndex == -1 {
+		t.Error("Generated code missing Variables section")
+	}
+
+	if modelsIndex != -1 && varsIndex > modelsIndex {
+		t.Error("Variables section should come before Models section")
+	}
+
+	// Should contain variable
+	if !strings.Contains(code, "const MAX_RETRIES = 5") {
+		t.Error("Generated code missing const MAX_RETRIES = 5")
+	}
+
+	// Should contain model
+	if !strings.Contains(code, "type Task struct") {
+		t.Error("Generated code missing Task model")
+	}
+
+	// Should contain function
+	if !strings.Contains(code, "func getTask(") {
+		t.Error("Generated code missing getTask function")
+	}
+}
+
+func TestGenVarsWithFloatType(t *testing.T) {
+	file := &ast.GMXFile{
+		Vars: []*ast.VarDecl{
+			{
+				Name:    "pi",
+				Type:    "float",
+				Value:   &ast.FloatLit{Value: "3.14"},
+				IsConst: false,
+			},
+		},
+	}
+
+	gen := New()
+	code, err := gen.Generate(file)
+	if err != nil {
+		t.Fatalf("Generate failed: %v", err)
+	}
+
+	if !isValidGo(code) {
+		t.Errorf("Generated code is not valid Go:\n%s", code)
+	}
+
+	// Should map float to float64
+	if !strings.Contains(code, "var pi float64 = 3.14") {
+		t.Error("Generated code missing var pi float64 = 3.14")
+	}
+}
+
+func TestGenVarsWithBinaryExpr(t *testing.T) {
+	file := &ast.GMXFile{
+		Vars: []*ast.VarDecl{
+			{
+				Name: "TOTAL",
+				Type: "",
+				Value: &ast.BinaryExpr{
+					Left:  &ast.IntLit{Value: "10"},
+					Op:    "+",
+					Right: &ast.IntLit{Value: "20"},
+				},
+				IsConst: true,
+			},
+		},
+	}
+
+	gen := New()
+	code, err := gen.Generate(file)
+	if err != nil {
+		t.Fatalf("Generate failed: %v", err)
+	}
+
+	if !isValidGo(code) {
+		t.Errorf("Generated code is not valid Go:\n%s", code)
+	}
+
+	// Should generate const with binary expression
+	if !strings.Contains(code, "const TOTAL = 10 + 20") {
+		t.Error("Generated code missing const TOTAL = 10 + 20")
+	}
+}
+
+// ============ IMPORT TESTS ============
+
+func TestGenerateNativeGoImport(t *testing.T) {
+	file := &ast.GMXFile{
+		Imports: []*ast.ImportDecl{
+			{
+				Path:     "github.com/stripe/stripe-go",
+				Alias:    "Stripe",
+				IsNative: true,
+			},
+		},
+	}
+
+	gen := New()
+	code, err := gen.Generate(file)
+	if err != nil {
+		t.Fatalf("Generate failed: %v", err)
+	}
+
+	// Should produce valid Go code
+	if !isValidGo(code) {
+		t.Errorf("Generated code is not valid Go:\n%s", code)
+	}
+
+	// Should contain the native Go import with alias
+	if !strings.Contains(code, `Stripe "github.com/stripe/stripe-go"`) {
+		t.Error("Generated code missing native Go import with alias")
+	}
+
+	// Should contain GMX import comment
+	if !strings.Contains(code, "// Native Go import: github.com/stripe/stripe-go as Stripe") {
+		t.Error("Generated code missing GMX import comment for native import")
+	}
+}
+
+func TestGenerateDefaultImportPlaceholder(t *testing.T) {
+	file := &ast.GMXFile{
+		Imports: []*ast.ImportDecl{
+			{
+				Default: "TaskItem",
+				Path:    "./components/TaskItem.gmx",
+			},
+		},
+	}
+
+	gen := New()
+	code, err := gen.Generate(file)
+	if err != nil {
+		t.Fatalf("Generate failed: %v", err)
+	}
+
+	// Should produce valid Go code
+	if !isValidGo(code) {
+		t.Errorf("Generated code is not valid Go:\n%s", code)
+	}
+
+	// Should contain TODO placeholder comment
+	if !strings.Contains(code, "// TODO: Component import: TaskItem from ./components/TaskItem.gmx") {
+		t.Error("Generated code missing TODO placeholder for default import")
+	}
+}
+
+func TestGenerateDestructuredImportPlaceholder(t *testing.T) {
+	file := &ast.GMXFile{
+		Imports: []*ast.ImportDecl{
+			{
+				Members: []string{"sendEmail", "MailerConfig"},
+				Path:    "./services/mailer.gmx",
+			},
+		},
+	}
+
+	gen := New()
+	code, err := gen.Generate(file)
+	if err != nil {
+		t.Fatalf("Generate failed: %v", err)
+	}
+
+	// Should produce valid Go code
+	if !isValidGo(code) {
+		t.Errorf("Generated code is not valid Go:\n%s", code)
+	}
+
+	// Should contain TODO placeholder comment
+	if !strings.Contains(code, "// TODO: Destructured import: sendEmail, MailerConfig from ./services/mailer.gmx") {
+		t.Error("Generated code missing TODO placeholder for destructured import")
+	}
+}
+
+func TestGenerateMixedImports(t *testing.T) {
+	file := &ast.GMXFile{
+		Imports: []*ast.ImportDecl{
+			{
+				Default: "TaskItem",
+				Path:    "./components/TaskItem.gmx",
+			},
+			{
+				Members: []string{"sendEmail"},
+				Path:    "./services/mailer.gmx",
+			},
+			{
+				Path:     "github.com/stripe/stripe-go",
+				Alias:    "Stripe",
+				IsNative: true,
+			},
+		},
+		Models: []*ast.ModelDecl{
+			{
+				Name: "Task",
+				Fields: []*ast.FieldDecl{
+					{
+						Name: "id",
+						Type: "uuid",
+						Annotations: []*ast.Annotation{
+							{Name: "pk", Args: map[string]string{}},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	gen := New()
+	code, err := gen.Generate(file)
+	if err != nil {
+		t.Fatalf("Generate failed: %v", err)
+	}
+
+	// Should produce valid Go code
+	if !isValidGo(code) {
+		t.Errorf("Generated code is not valid Go:\n%s", code)
+	}
+
+	// Should contain all import comments
+	if !strings.Contains(code, "// TODO: Component import: TaskItem from ./components/TaskItem.gmx") {
+		t.Error("Generated code missing default import placeholder")
+	}
+	if !strings.Contains(code, "// TODO: Destructured import: sendEmail from ./services/mailer.gmx") {
+		t.Error("Generated code missing destructured import placeholder")
+	}
+	if !strings.Contains(code, "// Native Go import: github.com/stripe/stripe-go as Stripe") {
+		t.Error("Generated code missing native import comment")
+	}
+
+	// Should contain the actual native Go import
+	if !strings.Contains(code, `Stripe "github.com/stripe/stripe-go"`) {
+		t.Error("Generated code missing native Go import in import block")
+	}
+
+	// Should still contain model generation
+	if !strings.Contains(code, "type Task struct") {
+		t.Error("Generated code missing Task model")
+	}
+}

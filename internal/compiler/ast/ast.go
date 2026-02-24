@@ -7,8 +7,10 @@ type Node interface {
 
 // GMXFile is the root AST node representing a complete .gmx file
 type GMXFile struct {
+	Imports  []*ImportDecl
 	Models   []*ModelDecl
 	Services []*ServiceDecl
+	Vars     []*VarDecl
 	Script   *ScriptBlock
 	Template *TemplateBlock
 	Style    *StyleBlock
@@ -86,11 +88,42 @@ func (a *Annotation) SimpleArg() string {
 
 // ============ SCRIPT SECTION ============
 
+// ImportDecl represents an import declaration with three syntaxes:
+// 1. Default import: import TaskItem from './components/TaskItem.gmx'
+// 2. Destructured import: import { sendEmail, MailerConfig } from './services/mailer.gmx'
+// 3. Native Go import: import "github.com/stripe/stripe-go" as Stripe
+type ImportDecl struct {
+	Default  string   // "TaskItem" (import X from '...')
+	Members  []string // ["sendEmail", "MailerConfig"] (import { x, y } from '...')
+	Path     string   // "./components/TaskItem.gmx" or "github.com/stripe/stripe-go"
+	Alias    string   // "Stripe" (import "pkg" as X)
+	IsNative bool     // true for Go package imports (no 'from', has 'as')
+}
+
+func (i *ImportDecl) TokenLiteral() string { return "import" }
+
+// VarDecl represents a top-level let or const declaration
+type VarDecl struct {
+	Name    string
+	Type    string     // optional, empty = inferred
+	Value   Expression // initial value (required)
+	IsConst bool       // true for const, false for let
+}
+
+func (v *VarDecl) TokenLiteral() string {
+	if v.IsConst {
+		return "const"
+	}
+	return "let"
+}
+
 // ScriptBlock contains GMX Script code (TypeScript-inspired syntax)
 type ScriptBlock struct {
 	Source    string          // Raw source (preserved for fallback)
+	Imports   []*ImportDecl   // Parsed import declarations
 	Models    []*ModelDecl    // Parsed model declarations
 	Services  []*ServiceDecl  // Parsed service declarations
+	Vars      []*VarDecl      // Parsed top-level variable declarations
 	Funcs     []*FuncDecl     // Parsed functions
 	StartLine int             // Line offset in the .gmx file for source maps
 }

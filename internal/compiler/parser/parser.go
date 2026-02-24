@@ -80,6 +80,7 @@ func (p *Parser) ParseGMXFile() *ast.GMXFile {
 	file := &ast.GMXFile{
 		Models:   []*ast.ModelDecl{},
 		Services: []*ast.ServiceDecl{},
+		Vars:     []*ast.VarDecl{},
 	}
 
 	// Parse all sections
@@ -94,8 +95,10 @@ func (p *Parser) ParseGMXFile() *ast.GMXFile {
 
 			scriptBlock := &ast.ScriptBlock{
 				Source:    source,
+				Imports:   result.Imports,
 				Models:    result.Models,
 				Services:  result.Services,
+				Vars:      result.Vars,
 				Funcs:     result.Funcs,
 				StartLine: lineOffset,
 			}
@@ -107,9 +110,11 @@ func (p *Parser) ParseGMXFile() *ast.GMXFile {
 
 			file.Script = scriptBlock
 
-			// Extract models and services to top-level for generator compatibility
+			// Extract imports, models, services, and vars to top-level for generator compatibility
+			file.Imports = append(file.Imports, result.Imports...)
 			file.Models = append(file.Models, result.Models...)
 			file.Services = append(file.Services, result.Services...)
+			file.Vars = append(file.Vars, result.Vars...)
 
 			p.nextToken()
 

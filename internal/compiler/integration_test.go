@@ -295,3 +295,221 @@ func isValidScript(code string) bool {
 	_, err := parser.ParseFile(fset, "test.go", code, parser.AllErrors)
 	return err == nil
 }
+
+// TestFileWithTopLevelVariables tests a file with top-level let/const declarations
+func TestFileWithTopLevelVariables(t *testing.T) {
+	input := `<script>
+const MAX_RETRIES = 5
+const API_VERSION = "v2"
+let requestCount: int = 0
+let debug: bool = false
+
+model Task {
+  id: uuid @pk
+  title: string
+}
+
+func handle(id: uuid) error {
+  return nil
+}
+</script>`
+
+	l := lexer.New(input)
+	p := gmxparser.New(l)
+	file := p.ParseGMXFile()
+
+	if len(p.Errors()) > 0 {
+		t.Fatalf("Parse errors: %v", p.Errors())
+	}
+
+	// Verify parsed structure
+	if len(file.Vars) != 4 {
+		t.Errorf("Expected 4 vars, got %d", len(file.Vars))
+	}
+
+	if len(file.Models) != 1 {
+		t.Errorf("Expected 1 model, got %d", len(file.Models))
+	}
+
+	gen := generator.New()
+	code, err := gen.Generate(file)
+	if err != nil {
+		t.Fatalf("Generate failed: %v", err)
+	}
+
+	if !isValidScript(code) {
+		t.Errorf("Generated code is not valid Go:\n%s", code)
+	}
+
+	// Verify generated variables
+	expectedVars := []string{
+		"const MAX_RETRIES = 5",
+		`const API_VERSION = "v2"`,
+		"var requestCount int = 0",
+		"var debug bool = false",
+	}
+
+	for _, expected := range expectedVars {
+		if !strings.Contains(code, expected) {
+			t.Errorf("Generated code missing expected variable: %q", expected)
+		}
+	}
+
+	// Verify model is still generated
+	if !strings.Contains(code, "type Task struct") {
+		t.Error("Missing Task struct")
+	}
+
+	// Verify function is still generated
+	if !strings.Contains(code, "func handle(") {
+		t.Error("Missing handle function")
+	}
+
+	// Verify variables section comes before models section
+	varsIndex := strings.Index(code, "Variables")
+	modelsIndex := strings.Index(code, "Models")
+
+	if varsIndex == -1 {
+		t.Error("Missing Variables section comment")
+	}
+
+	if modelsIndex != -1 && varsIndex > modelsIndex {
+		t.Error("Variables section should come before Models section")
+	}
+}
+
+// TestImportSystemFullPipeline tests the complete compilation pipeline with all three import types
+func TestImportSystemFullPipeline(t *testing.T) {
+	input := `<script>
+import TaskItem from "./components/TaskItem.gmx"
+import { sendEmail, MailerConfig } from "./services/mailer.gmx"
+import "github.com/stripe/stripe-go" as Stripe
+
+model Task {
+  id: uuid @pk
+  title: string @min(3) @max(255)
+  completed: bool @default(false)
+}
+
+service Database {
+  provider: "postgres"
+  url: string @env("DATABASE_URL")
+}
+
+let apiKey: string = "test-api-key"
+const maxRetries: int = 3
+
+func createTask(title: string) error {
+  let task = Task{
+    title: title,
+    completed: false
+  }
+  return error("not implemented")
+}
+</script>
+
+<template>
+<div>
+  <h1>Task Manager</h1>
+  {{range .Tasks}}
+    <div>{{.Title}}</div>
+  {{end}}
+</div>
+</template>
+
+<style scoped>
+  h1 { color: blue; }
+</style>
+`
+
+	// 1. Lex
+	l := lexer.New(input)
+
+	// 2. Parse
+	p := gmxparser.New(l)
+	file := p.ParseGMXFile()
+
+	if len(p.Errors()) > 0 {
+		t.Fatalf("Parse errors: %v", p.Errors())
+	}
+
+	if file == nil {
+		t.Fatal("ParseGMXFile returned nil")
+	}
+
+	// Verify imports
+	if len(file.Imports) != 3 {
+		t.Errorf("Expected 3 imports, got %d", len(file.Imports))
+	}
+
+	// Verify default import
+	if file.Imports[0].Default != "TaskItem" {
+		t.Errorf("Expected default import 'TaskItem', got %q", file.Imports[0].Default)
+	}
+
+	// Verify destructured import
+	if len(file.Imports[1].Members) != 2 {
+		t.Errorf("Expected 2 members in destructured import, got %d", len(file.Imports[1].Members))
+	}
+
+	// Verify native Go import
+	if !file.Imports[2].IsNative {
+		t.Error("Expected third import to be native Go import")
+	}
+	if file.Imports[2].Alias != "Stripe" {
+		t.Errorf("Expected native import alias 'Stripe', got %q", file.Imports[2].Alias)
+	}
+
+	// Verify models
+	if len(file.Models) != 1 {
+		t.Errorf("Expected 1 model, got %d", len(file.Models))
+	}
+
+	// Verify services
+	if len(file.Services) != 1 {
+		t.Errorf("Expected 1 service, got %d", len(file.Services))
+	}
+
+	// Verify vars
+	if len(file.Vars) != 2 {
+		t.Errorf("Expected 2 vars, got %d", len(file.Vars))
+	}
+
+	// Verify script funcs
+	if file.Script == nil || len(file.Script.Funcs) != 1 {
+		t.Error("Expected 1 function in script")
+	}
+
+	// 3. Generate
+	gen := generator.New()
+	code, err := gen.Generate(file)
+	if err != nil {
+		t.Fatalf("Generate failed: %v", err)
+	}
+
+	// 4. Verify generated code is valid Go
+	if !isValidScript(code) {
+		t.Errorf("Generated code is not valid Go:\n%s", code)
+	}
+
+	// 5. Verify import generation
+	expectedElements := []string{
+		"package main",
+		"// ========== GMX Imports ==========",
+		"// TODO: Component import: TaskItem from ./components/TaskItem.gmx",
+		"// TODO: Destructured import: sendEmail, MailerConfig from ./services/mailer.gmx",
+		"// Native Go import: github.com/stripe/stripe-go as Stripe",
+		`Stripe "github.com/stripe/stripe-go"`,
+		"type Task struct",
+		"type DatabaseConfig struct",
+		"var apiKey string",
+		"const maxRetries = 3",
+		"func createTask(ctx *GMXContext, title string) error",
+	}
+
+	for _, expected := range expectedElements {
+		if !strings.Contains(code, expected) {
+			t.Errorf("Generated code missing expected element: %q", expected)
+		}
+	}
+}

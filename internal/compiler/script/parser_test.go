@@ -1734,3 +1734,590 @@ func TestParseMixedDeclarationsInScriptBlock(t *testing.T) {
 		t.Errorf("expected 1 function, got %d", len(result.Funcs))
 	}
 }
+
+// ============ TOP-LEVEL VARIABLE DECLARATIONS TESTS ============
+
+func TestParseTopLevelConstWithInferredType(t *testing.T) {
+	input := `const MAX_RETRIES = 5`
+
+	result, errors := Parse(input, 0)
+
+	if len(errors) > 0 {
+		t.Fatalf("parse errors: %v", errors)
+	}
+
+	if len(result.Vars) != 1 {
+		t.Fatalf("expected 1 var, got %d", len(result.Vars))
+	}
+
+	varDecl := result.Vars[0]
+	if varDecl.Name != "MAX_RETRIES" {
+		t.Errorf("expected name 'MAX_RETRIES', got %q", varDecl.Name)
+	}
+
+	if !varDecl.IsConst {
+		t.Error("expected IsConst to be true")
+	}
+
+	if varDecl.Type != "" {
+		t.Errorf("expected empty type (inferred), got %q", varDecl.Type)
+	}
+
+	intLit, ok := varDecl.Value.(*ast.IntLit)
+	if !ok {
+		t.Fatalf("expected IntLit, got %T", varDecl.Value)
+	}
+
+	if intLit.Value != "5" {
+		t.Errorf("expected value '5', got %q", intLit.Value)
+	}
+}
+
+func TestParseTopLevelLetWithExplicitType(t *testing.T) {
+	input := `let requestCount: int = 0`
+
+	result, errors := Parse(input, 0)
+
+	if len(errors) > 0 {
+		t.Fatalf("parse errors: %v", errors)
+	}
+
+	if len(result.Vars) != 1 {
+		t.Fatalf("expected 1 var, got %d", len(result.Vars))
+	}
+
+	varDecl := result.Vars[0]
+	if varDecl.Name != "requestCount" {
+		t.Errorf("expected name 'requestCount', got %q", varDecl.Name)
+	}
+
+	if varDecl.IsConst {
+		t.Error("expected IsConst to be false")
+	}
+
+	if varDecl.Type != "int" {
+		t.Errorf("expected type 'int', got %q", varDecl.Type)
+	}
+
+	intLit, ok := varDecl.Value.(*ast.IntLit)
+	if !ok {
+		t.Fatalf("expected IntLit, got %T", varDecl.Value)
+	}
+
+	if intLit.Value != "0" {
+		t.Errorf("expected value '0', got %q", intLit.Value)
+	}
+}
+
+func TestParseTopLevelLetWithInferredType(t *testing.T) {
+	input := `let debug = false`
+
+	result, errors := Parse(input, 0)
+
+	if len(errors) > 0 {
+		t.Fatalf("parse errors: %v", errors)
+	}
+
+	if len(result.Vars) != 1 {
+		t.Fatalf("expected 1 var, got %d", len(result.Vars))
+	}
+
+	varDecl := result.Vars[0]
+	if varDecl.Name != "debug" {
+		t.Errorf("expected name 'debug', got %q", varDecl.Name)
+	}
+
+	if varDecl.IsConst {
+		t.Error("expected IsConst to be false")
+	}
+
+	boolLit, ok := varDecl.Value.(*ast.BoolLit)
+	if !ok {
+		t.Fatalf("expected BoolLit, got %T", varDecl.Value)
+	}
+
+	if boolLit.Value != false {
+		t.Errorf("expected value false, got %v", boolLit.Value)
+	}
+}
+
+func TestParseTopLevelConstString(t *testing.T) {
+	input := `const API_VERSION = "v2"`
+
+	result, errors := Parse(input, 0)
+
+	if len(errors) > 0 {
+		t.Fatalf("parse errors: %v", errors)
+	}
+
+	if len(result.Vars) != 1 {
+		t.Fatalf("expected 1 var, got %d", len(result.Vars))
+	}
+
+	varDecl := result.Vars[0]
+	if varDecl.Name != "API_VERSION" {
+		t.Errorf("expected name 'API_VERSION', got %q", varDecl.Name)
+	}
+
+	if !varDecl.IsConst {
+		t.Error("expected IsConst to be true")
+	}
+
+	stringLit, ok := varDecl.Value.(*ast.StringLit)
+	if !ok {
+		t.Fatalf("expected StringLit, got %T", varDecl.Value)
+	}
+
+	if stringLit.Value != "v2" {
+		t.Errorf("expected value 'v2', got %q", stringLit.Value)
+	}
+}
+
+func TestParseMultipleTopLevelVars(t *testing.T) {
+	input := `const MAX_RETRIES = 5
+const API_VERSION = "v2"
+let requestCount: int = 0
+let debug: bool = false`
+
+	result, errors := Parse(input, 0)
+
+	if len(errors) > 0 {
+		t.Fatalf("parse errors: %v", errors)
+	}
+
+	if len(result.Vars) != 4 {
+		t.Fatalf("expected 4 vars, got %d", len(result.Vars))
+	}
+
+	// Check first var
+	if result.Vars[0].Name != "MAX_RETRIES" || !result.Vars[0].IsConst {
+		t.Errorf("expected const MAX_RETRIES, got %s (IsConst=%v)", result.Vars[0].Name, result.Vars[0].IsConst)
+	}
+
+	// Check second var
+	if result.Vars[1].Name != "API_VERSION" || !result.Vars[1].IsConst {
+		t.Errorf("expected const API_VERSION, got %s (IsConst=%v)", result.Vars[1].Name, result.Vars[1].IsConst)
+	}
+
+	// Check third var
+	if result.Vars[2].Name != "requestCount" || result.Vars[2].IsConst {
+		t.Errorf("expected let requestCount, got %s (IsConst=%v)", result.Vars[2].Name, result.Vars[2].IsConst)
+	}
+
+	// Check fourth var
+	if result.Vars[3].Name != "debug" || result.Vars[3].IsConst {
+		t.Errorf("expected let debug, got %s (IsConst=%v)", result.Vars[3].Name, result.Vars[3].IsConst)
+	}
+}
+
+func TestParseMixedDeclarationsWithVars(t *testing.T) {
+	input := `const MAX_RETRIES = 5
+const API_VERSION = "v2"
+let requestCount: int = 0
+
+model Task {
+	id: uuid @pk
+}
+
+service Database {
+	provider: "sqlite"
+}
+
+func toggle(id: uuid) error {
+	return nil
+}`
+
+	result, errors := Parse(input, 0)
+
+	if len(errors) > 0 {
+		t.Fatalf("parse errors: %v", errors)
+	}
+
+	if len(result.Vars) != 3 {
+		t.Errorf("expected 3 vars, got %d", len(result.Vars))
+	}
+
+	if len(result.Models) != 1 {
+		t.Errorf("expected 1 model, got %d", len(result.Models))
+	}
+
+	if len(result.Services) != 1 {
+		t.Errorf("expected 1 service, got %d", len(result.Services))
+	}
+
+	if len(result.Funcs) != 1 {
+		t.Errorf("expected 1 function, got %d", len(result.Funcs))
+	}
+}
+
+func TestParseTopLevelVarWithBinaryExpr(t *testing.T) {
+	input := `const TOTAL = 10 + 20`
+
+	result, errors := Parse(input, 0)
+
+	if len(errors) > 0 {
+		t.Fatalf("parse errors: %v", errors)
+	}
+
+	if len(result.Vars) != 1 {
+		t.Fatalf("expected 1 var, got %d", len(result.Vars))
+	}
+
+	varDecl := result.Vars[0]
+	binaryExpr, ok := varDecl.Value.(*ast.BinaryExpr)
+	if !ok {
+		t.Fatalf("expected BinaryExpr, got %T", varDecl.Value)
+	}
+
+	if binaryExpr.Op != "+" {
+		t.Errorf("expected '+', got %q", binaryExpr.Op)
+	}
+}
+
+// Error cases for top-level variables
+
+func TestParseTopLevelLetMissingValue(t *testing.T) {
+	input := `let requestCount: int =`
+
+	_, errors := Parse(input, 0)
+
+	if len(errors) == 0 {
+		t.Error("expected parser errors for missing value")
+	}
+}
+
+func TestParseTopLevelLetMissingAssignment(t *testing.T) {
+	input := `let requestCount: int`
+
+	_, errors := Parse(input, 0)
+
+	if len(errors) == 0 {
+		t.Error("expected parser errors for missing assignment")
+	}
+}
+
+func TestParseTopLevelConstInvalidType(t *testing.T) {
+	input := `const MAX: @ = 5`
+
+	_, errors := Parse(input, 0)
+
+	if len(errors) == 0 {
+		t.Error("expected parser errors for invalid type")
+	}
+}
+
+// ============ IMPORT TESTS ============
+
+func TestParseDefaultImport(t *testing.T) {
+	input := `import TaskItem from "./components/TaskItem.gmx"`
+
+	result, errors := Parse(input, 0)
+
+	if len(errors) > 0 {
+		t.Fatalf("parse errors: %v", errors)
+	}
+
+	if len(result.Imports) != 1 {
+		t.Fatalf("expected 1 import, got %d", len(result.Imports))
+	}
+
+	imp := result.Imports[0]
+	if imp.Default != "TaskItem" {
+		t.Errorf("expected default 'TaskItem', got %q", imp.Default)
+	}
+
+	if imp.Path != "./components/TaskItem.gmx" {
+		t.Errorf("expected path './components/TaskItem.gmx', got %q", imp.Path)
+	}
+
+	if imp.IsNative {
+		t.Error("expected IsNative to be false")
+	}
+}
+
+func TestParseDestructuredImportSingleMember(t *testing.T) {
+	input := `import { sendEmail } from "./services/mailer.gmx"`
+
+	result, errors := Parse(input, 0)
+
+	if len(errors) > 0 {
+		t.Fatalf("parse errors: %v", errors)
+	}
+
+	if len(result.Imports) != 1 {
+		t.Fatalf("expected 1 import, got %d", len(result.Imports))
+	}
+
+	imp := result.Imports[0]
+	if len(imp.Members) != 1 {
+		t.Fatalf("expected 1 member, got %d", len(imp.Members))
+	}
+
+	if imp.Members[0] != "sendEmail" {
+		t.Errorf("expected member 'sendEmail', got %q", imp.Members[0])
+	}
+
+	if imp.Path != "./services/mailer.gmx" {
+		t.Errorf("expected path './services/mailer.gmx', got %q", imp.Path)
+	}
+
+	if imp.IsNative {
+		t.Error("expected IsNative to be false")
+	}
+}
+
+func TestParseDestructuredImportMultipleMembers(t *testing.T) {
+	input := `import { sendEmail, MailerConfig, validateEmail } from "./services/mailer.gmx"`
+
+	result, errors := Parse(input, 0)
+
+	if len(errors) > 0 {
+		t.Fatalf("parse errors: %v", errors)
+	}
+
+	if len(result.Imports) != 1 {
+		t.Fatalf("expected 1 import, got %d", len(result.Imports))
+	}
+
+	imp := result.Imports[0]
+	if len(imp.Members) != 3 {
+		t.Fatalf("expected 3 members, got %d", len(imp.Members))
+	}
+
+	expectedMembers := []string{"sendEmail", "MailerConfig", "validateEmail"}
+	for i, expected := range expectedMembers {
+		if imp.Members[i] != expected {
+			t.Errorf("expected member[%d] %q, got %q", i, expected, imp.Members[i])
+		}
+	}
+
+	if imp.Path != "./services/mailer.gmx" {
+		t.Errorf("expected path './services/mailer.gmx', got %q", imp.Path)
+	}
+}
+
+func TestParseNativeGoImport(t *testing.T) {
+	input := `import "github.com/stripe/stripe-go" as Stripe`
+
+	result, errors := Parse(input, 0)
+
+	if len(errors) > 0 {
+		t.Fatalf("parse errors: %v", errors)
+	}
+
+	if len(result.Imports) != 1 {
+		t.Fatalf("expected 1 import, got %d", len(result.Imports))
+	}
+
+	imp := result.Imports[0]
+	if imp.Path != "github.com/stripe/stripe-go" {
+		t.Errorf("expected path 'github.com/stripe/stripe-go', got %q", imp.Path)
+	}
+
+	if imp.Alias != "Stripe" {
+		t.Errorf("expected alias 'Stripe', got %q", imp.Alias)
+	}
+
+	if !imp.IsNative {
+		t.Error("expected IsNative to be true")
+	}
+}
+
+func TestParseMixedImportsAndDeclarations(t *testing.T) {
+	input := `import TaskItem from "./components/TaskItem.gmx"
+import { sendEmail } from "./services/mailer.gmx"
+import "github.com/stripe/stripe-go" as Stripe
+
+model Task {
+	id: uuid @pk
+	title: string
+}
+
+service Database {
+	provider: "postgres"
+	url: string @env("DATABASE_URL")
+}
+
+let apiKey: string = "test-key"
+const maxRetries: int = 3
+
+func createTask(title: string) error {
+	return error("not implemented")
+}`
+
+	result, errors := Parse(input, 0)
+
+	if len(errors) > 0 {
+		t.Fatalf("parse errors: %v", errors)
+	}
+
+	// Verify imports
+	if len(result.Imports) != 3 {
+		t.Fatalf("expected 3 imports, got %d", len(result.Imports))
+	}
+
+	// Verify models
+	if len(result.Models) != 1 {
+		t.Fatalf("expected 1 model, got %d", len(result.Models))
+	}
+
+	// Verify services
+	if len(result.Services) != 1 {
+		t.Fatalf("expected 1 service, got %d", len(result.Services))
+	}
+
+	// Verify vars
+	if len(result.Vars) != 2 {
+		t.Fatalf("expected 2 vars, got %d", len(result.Vars))
+	}
+
+	// Verify funcs
+	if len(result.Funcs) != 1 {
+		t.Fatalf("expected 1 func, got %d", len(result.Funcs))
+	}
+}
+
+func TestImportAfterDeclarationError(t *testing.T) {
+	input := `func test() error {
+	return error("test")
+}
+
+import TaskItem from "./components/TaskItem.gmx"`
+
+	result, errors := Parse(input, 0)
+
+	if len(errors) == 0 {
+		t.Fatal("expected parse error for import after declaration")
+	}
+
+	// Still should parse the function
+	if len(result.Funcs) != 1 {
+		t.Errorf("expected 1 func despite error, got %d", len(result.Funcs))
+	}
+}
+
+func TestMalformedImportMissingFrom(t *testing.T) {
+	input := `import TaskItem "./components/TaskItem.gmx"`
+
+	_, errors := Parse(input, 0)
+
+	if len(errors) == 0 {
+		t.Fatal("expected parse error for missing 'from' keyword")
+	}
+}
+
+func TestMalformedImportMissingPath(t *testing.T) {
+	input := `import TaskItem from`
+
+	_, errors := Parse(input, 0)
+
+	if len(errors) == 0 {
+		t.Fatal("expected parse error for missing path")
+	}
+}
+
+func TestMalformedImportMissingAs(t *testing.T) {
+	input := `import "github.com/stripe/stripe-go" Stripe`
+
+	_, errors := Parse(input, 0)
+
+	if len(errors) == 0 {
+		t.Fatal("expected parse error for missing 'as' keyword")
+	}
+}
+
+func TestDestructuredImportMissingClosingBrace(t *testing.T) {
+	input := `import { sendEmail from "./services/mailer.gmx"`
+
+	_, errors := Parse(input, 0)
+
+	if len(errors) == 0 {
+		t.Fatal("expected parse error for missing closing brace")
+	}
+}
+
+func TestSimpleImportThenModel(t *testing.T) {
+	input := `import TaskItem from "./components/TaskItem.gmx"
+
+model Task {
+	id: uuid @pk
+}`
+
+	result, errors := Parse(input, 0)
+
+	if len(errors) > 0 {
+		t.Fatalf("parse errors: %v", errors)
+	}
+
+	if len(result.Imports) != 1 {
+		t.Fatalf("expected 1 import, got %d", len(result.Imports))
+	}
+
+	if len(result.Models) != 1 {
+		t.Fatalf("expected 1 model, got %d", len(result.Models))
+	}
+}
+
+func TestThreeImportsThenModel(t *testing.T) {
+	input := `import TaskItem from "./components/TaskItem.gmx"
+import { sendEmail } from "./services/mailer.gmx"
+import "github.com/stripe/stripe-go" as Stripe
+
+model Task {
+	id: uuid @pk
+}`
+
+	result, errors := Parse(input, 0)
+
+	if len(errors) > 0 {
+		t.Fatalf("parse errors: %v", errors)
+	}
+
+	if len(result.Imports) != 3 {
+		t.Fatalf("expected 3 imports, got %d", len(result.Imports))
+	}
+
+	if len(result.Models) != 1 {
+		t.Fatalf("expected 1 model, got %d", len(result.Models))
+	}
+}
+
+func TestImportThenService(t *testing.T) {
+	input := `import TaskItem from "./components/TaskItem.gmx"
+
+service Database {
+	provider: "postgres"
+	url: string @env("DATABASE_URL")
+}`
+
+	result, errors := Parse(input, 0)
+
+	if len(errors) > 0 {
+		t.Fatalf("parse errors: %v", errors)
+	}
+
+	if len(result.Imports) != 1 {
+		t.Fatalf("expected 1 import, got %d", len(result.Imports))
+	}
+
+	if len(result.Services) != 1 {
+		t.Fatalf("expected 1 service, got %d", len(result.Services))
+	}
+}
+
+func TestServiceOnly(t *testing.T) {
+	input := `service Database {
+	provider: "postgres"
+	url: string @env("DATABASE_URL")
+}`
+
+	result, errors := Parse(input, 0)
+
+	if len(errors) > 0 {
+		t.Fatalf("parse errors: %v", errors)
+	}
+
+	if len(result.Services) != 1 {
+		t.Fatalf("expected 1 service, got %d", len(result.Services))
+	}
+}

@@ -60,8 +60,10 @@ type (
 
 // ParseResult contains all parsed declarations from a script block
 type ParseResult struct {
+	Imports  []*ast.ImportDecl
 	Models   []*ast.ModelDecl
 	Services []*ast.ServiceDecl
+	Vars     []*ast.VarDecl
 	Funcs    []*ast.FuncDecl
 }
 
@@ -113,16 +115,35 @@ func Parse(source string, lineOffset int) (*ParseResult, []string) {
 	p.nextToken()
 	p.nextToken()
 
-	// Parse all top-level declarations (model, service, func)
+	// Parse all top-level declarations (import, model, service, let, const, func)
 	result := &ParseResult{
+		Imports:  []*ast.ImportDecl{},
 		Models:   []*ast.ModelDecl{},
 		Services: []*ast.ServiceDecl{},
+		Vars:     []*ast.VarDecl{},
 		Funcs:    []*ast.FuncDecl{},
 	}
 
+	// Track if we've seen non-import declarations for ordering validation
+	hasNonImport := false
+
 	for p.curToken.Type != token.EOF {
 		switch p.curToken.Type {
+		case token.IMPORT:
+			// Validate that imports come before other declarations
+			if hasNonImport {
+				p.error("import declarations must appear before model, service, func, let, or const declarations")
+				p.nextToken()
+				continue
+			}
+			importDecl := p.parseImportDecl()
+			if importDecl != nil {
+				result.Imports = append(result.Imports, importDecl)
+			}
+			p.nextToken()
+
 		case token.MODEL:
+			hasNonImport = true
 			model := p.parseModelDecl()
 			if model != nil {
 				result.Models = append(result.Models, model)
@@ -130,13 +151,31 @@ func Parse(source string, lineOffset int) (*ParseResult, []string) {
 			// parseModelDecl already consumes the closing brace and moves past it
 
 		case token.SERVICE:
+			hasNonImport = true
 			svc := p.parseServiceDecl()
 			if svc != nil {
 				result.Services = append(result.Services, svc)
 			}
 			// parseServiceDecl already consumes the closing brace and moves past it
 
+		case token.LET:
+			hasNonImport = true
+			varDecl := p.parseVarDecl(false)
+			if varDecl != nil {
+				result.Vars = append(result.Vars, varDecl)
+			}
+			p.nextToken() // Move past the declaration
+
+		case token.CONST:
+			hasNonImport = true
+			varDecl := p.parseVarDecl(true)
+			if varDecl != nil {
+				result.Vars = append(result.Vars, varDecl)
+			}
+			p.nextToken() // Move past the declaration
+
 		case token.FUNC:
+			hasNonImport = true
 			fn := p.parseFuncDecl()
 			if fn != nil {
 				result.Funcs = append(result.Funcs, fn)
@@ -144,7 +183,7 @@ func Parse(source string, lineOffset int) (*ParseResult, []string) {
 			p.nextToken() // Move past the closing brace
 
 		default:
-			p.error(fmt.Sprintf("expected model, service, or func declaration, got %s", p.curToken.Type))
+			p.error(fmt.Sprintf("expected import, model, service, let, const, or func declaration, got %s", p.curToken.Type))
 			p.nextToken()
 		}
 	}
@@ -202,6 +241,134 @@ func (p *Parser) registerPrefix(tokenType token.TokenType, fn prefixParseFn) {
 
 func (p *Parser) registerInfix(tokenType token.TokenType, fn infixParseFn) {
 	p.infixParseFns[tokenType] = fn
+}
+
+// ============ IMPORT DECLARATION ============
+
+// parseImportDecl handles three import syntaxes:
+// 1. Default: import TaskItem from './components/TaskItem.gmx'
+// 2. Destructured: import { sendEmail, MailerConfig } from './services/mailer.gmx'
+// 3. Native Go: import "github.com/stripe/stripe-go" as Stripe
+func (p *Parser) parseImportDecl() *ast.ImportDecl {
+	// Move past 'import' keyword
+	p.nextToken()
+
+	// Detect which syntax based on current token
+	switch p.curToken.Type {
+	case token.LBRACE:
+		// Syntax 2: Destructured import { x, y } from '...'
+		return p.parseDestructuredImport()
+
+	case token.STRING:
+		// Syntax 3: Native Go import "pkg" as Alias
+		return p.parseNativeImport()
+
+	case token.IDENT:
+		// Syntax 1: Default import X from '...'
+		return p.parseDefaultImport()
+
+	default:
+		p.error(fmt.Sprintf("expected '{', string, or identifier after 'import', got %s", p.curToken.Type))
+		return nil
+	}
+}
+
+// parseDefaultImport parses: import TaskItem from './path.gmx'
+func (p *Parser) parseDefaultImport() *ast.ImportDecl {
+	importDecl := &ast.ImportDecl{}
+
+	// Current token is the default import name
+	importDecl.Default = p.curToken.Literal
+
+	// Expect 'from' keyword (contextual - check IDENT with literal "from")
+	if !p.expectPeek(token.IDENT) {
+		return nil
+	}
+	if p.curToken.Literal != "from" {
+		p.error(fmt.Sprintf("expected 'from' after default import name, got %s", p.curToken.Literal))
+		return nil
+	}
+
+	// Expect path string
+	if !p.expectPeek(token.STRING) {
+		return nil
+	}
+	importDecl.Path = p.curToken.Literal
+
+	return importDecl
+}
+
+// parseDestructuredImport parses: import { x, y } from './path.gmx'
+func (p *Parser) parseDestructuredImport() *ast.ImportDecl {
+	importDecl := &ast.ImportDecl{
+		Members: []string{},
+	}
+
+	// Current token is '{'
+	if !p.expectPeek(token.IDENT) {
+		return nil
+	}
+
+	// Parse first member
+	importDecl.Members = append(importDecl.Members, p.curToken.Literal)
+
+	// Parse remaining members
+	for p.peekTokenIs(token.COMMA) {
+		p.nextToken() // consume comma
+		if !p.expectPeek(token.IDENT) {
+			return nil
+		}
+		importDecl.Members = append(importDecl.Members, p.curToken.Literal)
+	}
+
+	// Expect '}'
+	if !p.expectPeek(token.RBRACE) {
+		return nil
+	}
+
+	// Expect 'from' keyword (contextual - check IDENT with literal "from")
+	if !p.expectPeek(token.IDENT) {
+		return nil
+	}
+	if p.curToken.Literal != "from" {
+		p.error(fmt.Sprintf("expected 'from' after destructured import, got %s", p.curToken.Literal))
+		return nil
+	}
+
+	// Expect path string
+	if !p.expectPeek(token.STRING) {
+		return nil
+	}
+	importDecl.Path = p.curToken.Literal
+
+	return importDecl
+}
+
+// parseNativeImport parses: import "github.com/pkg" as Alias
+func (p *Parser) parseNativeImport() *ast.ImportDecl {
+	importDecl := &ast.ImportDecl{
+		IsNative: true,
+	}
+
+	// Current token is the package path string
+	importDecl.Path = p.curToken.Literal
+
+	// Expect 'as' keyword (check for either token.AS or IDENT with literal "as")
+	p.nextToken()
+	if p.curToken.Type == token.AS || (p.curToken.Type == token.IDENT && p.curToken.Literal == "as") {
+		// Good, we have 'as'
+	} else {
+		p.error(fmt.Sprintf("expected 'as' after package path in native import, got %s", p.curToken.Type))
+		return nil
+	}
+
+	// Expect alias name
+	if !p.expectPeek(token.IDENT) {
+		return nil
+	}
+	importDecl.Alias = p.curToken.Literal
+
+	return importDecl
 }
 
 // ============ FUNCTION DECLARATION ============
@@ -315,6 +482,48 @@ func (p *Parser) expectPeekType() bool {
 		return true
 	}
 	return false
+}
+
+// parseVarDecl parses a top-level let or const declaration
+// Syntax: let name: type = value or let name = value
+func (p *Parser) parseVarDecl(isConst bool) *ast.VarDecl {
+	varDecl := &ast.VarDecl{
+		IsConst: isConst,
+	}
+
+	// Expect variable name
+	if !p.expectPeek(token.IDENT) {
+		return nil
+	}
+	varDecl.Name = p.curToken.Literal
+
+	// Check for optional type annotation: : type
+	if p.peekTokenIs(token.COLON) {
+		p.nextToken() // consume ':'
+
+		// Expect type name
+		if !p.expectPeek(token.IDENT) && !p.expectPeekType() {
+			p.error(fmt.Sprintf("expected type after ':', got %s", p.peekToken.Type))
+			return nil
+		}
+		varDecl.Type = p.curToken.Literal
+	}
+
+	// Expect '='
+	if !p.expectPeek(token.ASSIGN) {
+		return nil
+	}
+
+	// Parse initial value
+	p.nextToken()
+	varDecl.Value = p.parseExpression(LOWEST)
+
+	if varDecl.Value == nil {
+		p.error("expected initial value for variable declaration")
+		return nil
+	}
+
+	return varDecl
 }
 
 // ============ STATEMENTS ============
