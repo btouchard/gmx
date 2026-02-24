@@ -119,6 +119,12 @@ func (g *Generator) genScriptHandlers(scriptBlock *ast.ScriptBlock) string {
 	var b strings.Builder
 
 	for _, fn := range scriptBlock.Funcs {
+		// Only generate HTTP handlers for functions that return error (handlers)
+		// Functions with other return types are utility functions, not handlers
+		if fn.ReturnType != "" && fn.ReturnType != "error" {
+			continue
+		}
+
 		handlerName := "handle" + utils.Capitalize(fn.Name)
 		expectedMethod := inferHTTPMethod(fn.Name)
 

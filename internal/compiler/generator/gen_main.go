@@ -124,6 +124,10 @@ func (g *Generator) genMain(file *ast.GMXFile, routes map[string]string) string 
 	// Register script function handlers that are NOT in template routes
 	if file.Script != nil && file.Script.Funcs != nil {
 		for _, fn := range file.Script.Funcs {
+			// Skip utility functions (non-error return type)
+			if fn.ReturnType != "" && fn.ReturnType != "error" {
+				continue
+			}
 			// Check if this function is already registered via template route
 			found := false
 			for routeName := range routes {

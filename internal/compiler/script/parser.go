@@ -67,19 +67,11 @@ type ParseResult struct {
 	Funcs    []*ast.FuncDecl
 }
 
-// Parse takes the raw script source and returns parsed declarations (models, services, functions)
-func Parse(source string, lineOffset int) (*ParseResult, []string) {
-	l := lexer.New(source)
-	p := &Parser{
-		l:          l,
-		lineOffset: lineOffset,
-		errors:     []string{},
-	}
-
-	// Initialize prefix parsers
+// initParseFns registers all prefix and infix parse functions on the parser.
+func (p *Parser) initParseFns() {
 	p.prefixParseFns = make(map[token.TokenType]prefixParseFn)
 	p.registerPrefix(token.IDENT, p.parseIdentifier)
-	p.registerPrefix(token.TASK, p.parseIdentifier) // TASK is a keyword in GMX but an identifier in scripts
+	p.registerPrefix(token.TASK, p.parseIdentifier)
 	p.registerPrefix(token.INT, p.parseIntLiteral)
 	p.registerPrefix(token.FLOAT, p.parseFloatLiteral)
 	p.registerPrefix(token.STRING, p.parseStringLiteral)
@@ -93,7 +85,6 @@ func Parse(source string, lineOffset int) (*ParseResult, []string) {
 	p.registerPrefix(token.ERROR, p.parseErrorExpression)
 	p.registerPrefix(token.CTX, p.parseCtxExpression)
 
-	// Initialize infix parsers
 	p.infixParseFns = make(map[token.TokenType]infixParseFn)
 	p.registerInfix(token.PLUS, p.parseBinaryExpression)
 	p.registerInfix(token.MINUS, p.parseBinaryExpression)
@@ -110,6 +101,18 @@ func Parse(source string, lineOffset int) (*ParseResult, []string) {
 	p.registerInfix(token.OR, p.parseBinaryExpression)
 	p.registerInfix(token.DOT, p.parseMemberExpression)
 	p.registerInfix(token.LPAREN, p.parseCallExpression)
+}
+
+// Parse takes the raw script source and returns parsed declarations (models, services, functions)
+func Parse(source string, lineOffset int) (*ParseResult, []string) {
+	l := lexer.New(source)
+	p := &Parser{
+		l:          l,
+		lineOffset: lineOffset,
+		errors:     []string{},
+	}
+
+	p.initParseFns()
 
 	// Read two tokens to initialize curToken and peekToken
 	p.nextToken()
@@ -838,7 +841,7 @@ func (p *Parser) parseStringInterpolation(s string) []ast.StringPart {
 }
 
 func (p *Parser) parseExpressionFromString(s string) ast.Expression {
-	// Create a sub-parser for the expression
+	// Create a sub-parser with its own parse functions bound to itself
 	subLexer := lexer.New(s)
 	subParser := &Parser{
 		l:          subLexer,
@@ -846,9 +849,7 @@ func (p *Parser) parseExpressionFromString(s string) ast.Expression {
 		errors:     []string{},
 	}
 
-	// Copy the prefix and infix parsers
-	subParser.prefixParseFns = p.prefixParseFns
-	subParser.infixParseFns = p.infixParseFns
+	subParser.initParseFns()
 
 	// Initialize tokens
 	subParser.nextToken()

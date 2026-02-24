@@ -135,7 +135,8 @@ func createUserTask(title: string) error {
   const task = Task{
     title: title,
     done: false,
-    userId: userId
+    userId: userId,
+    tenantId: tenantId
   }
 
   try task.save()

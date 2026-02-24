@@ -95,7 +95,13 @@ func (t *Transpiler) TranspileFunc(fn *ast.FuncDecl) string {
 		}
 	}
 
-	t.emit(") error {\n")
+	// Emit return type
+	returnType := fn.ReturnType
+	if returnType == "" {
+		returnType = "error"
+	}
+	goReturnType := t.transpileType(returnType)
+	t.emit(") %s {\n", goReturnType)
 	t.indent++
 
 	// Transpile function body
@@ -106,7 +112,13 @@ func (t *Transpiler) TranspileFunc(fn *ast.FuncDecl) string {
 	// Ensure function returns (in case no explicit return)
 	if !t.endsWithReturn(fn.Body) {
 		t.emitIndent()
-		t.emit("return nil\n")
+		if goReturnType == "error" {
+			t.emit("return nil\n")
+		} else {
+			t.emit("var zero %s\n", goReturnType)
+			t.emitIndent()
+			t.emit("return zero\n")
+		}
 	}
 
 	t.indent--
@@ -284,6 +296,8 @@ func (t *Transpiler) transpileExpr(expr ast.Expression) string {
 		return t.transpileExpr(e.Expr)
 	case *ast.ErrorExpr:
 		return t.transpileErrorExpr(e)
+	case *ast.CtxExpr:
+		return fmt.Sprintf("ctx.%s", utils.Capitalize(e.Field))
 	case *ast.RenderExpr:
 		// render() as expression (shouldn't happen, but handle it)
 		return "nil /* render() should be used in return statement */"
