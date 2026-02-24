@@ -1,0 +1,349 @@
+<script>
+// ============================================================
+// GMX Demo — Showcase of all available features
+// ============================================================
+
+// --- Imports (3 styles) ---
+// 1. Default import: import a .gmx component
+//    import TaskItem from './components/TaskItem.gmx'
+//
+// 2. Destructured import: pick specific exports
+//    import { sendEmail, MailerConfig } from './services/mailer.gmx'
+//
+// 3. Native Go import: use any Go package
+//    import "github.com/stripe/stripe-go" as Stripe
+
+// --- Constants & Variables ---
+const APP_NAME = "GMX Demo"
+const MAX_TITLE_LENGTH = 255
+let requestCount: int = 0
+let debugMode: bool = false
+
+// --- Services ---
+
+service Database {
+  provider: "sqlite"
+  url:      string @env("DATABASE_URL")
+}
+
+service Mailer {
+  provider: "smtp"
+  host:     string @env("SMTP_HOST")
+  pass:     string @env("SMTP_PASS")
+  func send(to: string, subject: string, body: string) error
+}
+
+service GitHub {
+  provider: "http"
+  baseUrl:  string @env("GITHUB_API_URL")
+  apiKey:   string @env("GITHUB_TOKEN")
+}
+
+// --- Models ---
+
+model User {
+  id:        uuid     @pk @default(uuid_v4)
+  email:     string   @email @unique
+  name:      string   @min(2) @max(100)
+  age:       int      @min(18) @max(150)
+  score:     float    @min(0)
+  isAdmin:   bool     @default(false)
+  createdAt: datetime
+  tasks:     Task[]
+}
+
+model Task {
+  id:        uuid     @pk @default(uuid_v4)
+  title:     string   @min(3) @max(255)
+  done:      bool     @default(false)
+  priority:  int      @min(1) @max(5) @default(3)
+  tenantId:  uuid     @scoped
+  userId:    uuid
+  user:      User     @relation(references: [id])
+  createdAt: datetime
+}
+
+// --- Functions ---
+
+// GET handler (inferred from "list" prefix)
+func listTasks() error {
+  let tasks = try Task.all()
+  return render(tasks)
+}
+
+// GET handler (inferred from "get" prefix)
+func getTask(id: uuid) error {
+  let task = try Task.find(id)
+  return render(task)
+}
+
+// POST handler (inferred from "create" prefix)
+func createTask(title: string, priority: int) error {
+  if title == "" {
+    return error("Title cannot be empty")
+  }
+
+  const task = Task{
+    title: title,
+    priority: priority,
+    done: false,
+    userId: ctx.User
+  }
+
+  try task.save()
+  return render(task)
+}
+
+// PATCH handler (inferred from "toggle" prefix)
+func toggleTask(id: uuid) error {
+  let task = try Task.find(id)
+  task.done = !task.done
+  try task.save()
+  return render(task)
+}
+
+// PATCH handler (inferred from "update" prefix)
+func updateTask(id: uuid, title: string) error {
+  let task = try Task.find(id)
+  task.title = title
+  try task.save()
+  return render(task)
+}
+
+// DELETE handler (inferred from "delete" prefix)
+func deleteTask(id: uuid) error {
+  let task = try Task.find(id)
+  try task.delete()
+  return nil
+}
+
+// Utility function with model parameter and string interpolation
+func getTaskLabel(t: Task) string {
+  let label = "Task: {t.title}"
+  return label
+}
+
+// Business logic with if/else and context access
+func createUserTask(title: string) error {
+  let userId = ctx.User
+  let tenantId = ctx.Tenant
+
+  if userId == "" {
+    return error("User not authenticated")
+  }
+
+  const task = Task{
+    title: title,
+    done: false,
+    userId: userId
+  }
+
+  try task.save()
+  return render(task)
+}
+</script>
+
+<template>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GMX Demo — Full Feature Showcase</title>
+  <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>GMX Demo</h1>
+      <p>Tasks: {{len .Tasks}}</p>
+    </header>
+
+    <!-- CSRF token is auto-available as {{.CSRFToken}} -->
+
+    <!-- POST: create a task -->
+    <form class="task-form"
+      hx-post="{{route "createTask"}}"
+      hx-target="#task-list"
+      hx-swap="beforeend">
+      <input type="text" name="title" placeholder="What needs to be done?" required />
+      <select name="priority">
+        <option value="1">Low</option>
+        <option value="3" selected>Normal</option>
+        <option value="5">High</option>
+      </select>
+      <button type="submit">Add Task</button>
+    </form>
+
+    <!-- GET: load all tasks -->
+    <section
+      hx-get="{{route "listTasks"}}"
+      hx-trigger="load"
+      hx-target="#task-list"
+      hx-swap="innerHTML">
+    </section>
+
+    <ul id="task-list" class="task-list">
+      {{range .Tasks}}
+      <li class="task-item {{if .Done}}done{{end}}" id="task-{{.ID}}">
+
+        <!-- PATCH: toggle task -->
+        <input
+          type="checkbox"
+          class="task-checkbox"
+          {{if .Done}}checked{{end}}
+          hx-patch="{{route "toggleTask"}}?id={{.ID}}"
+          hx-target="#task-{{.ID}}"
+          hx-swap="outerHTML"
+        />
+
+        <span class="task-title">{{.Title}}</span>
+
+        {{if gt .Priority 3}}
+          <span class="badge priority-high">High</span>
+        {{else if eq .Priority 3}}
+          <span class="badge priority-normal">Normal</span>
+        {{else}}
+          <span class="badge priority-low">Low</span>
+        {{end}}
+
+        {{if not .Done}}
+          <span class="badge pending">Pending</span>
+        {{end}}
+
+        <!-- DELETE: remove task -->
+        <button
+          class="task-delete"
+          hx-delete="{{route "deleteTask"}}?id={{.ID}}"
+          hx-target="#task-{{.ID}}"
+          hx-swap="outerHTML swap:300ms"
+          hx-confirm="Delete this task?"
+        >
+          Delete
+        </button>
+      </li>
+      {{end}}
+    </ul>
+
+    {{if eq (len .Tasks) 0}}
+      <p class="empty-state">No tasks yet. Add one above!</p>
+    {{end}}
+  </div>
+</body>
+</html>
+</template>
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 2rem;
+    background: #f5f5f5;
+    color: #333;
+  }
+
+  .container {
+    background: white;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+
+  header { margin-bottom: 2rem; }
+  header h1 { color: #1a1a1a; margin-bottom: 0.25rem; }
+  header p { color: #888; font-size: 0.875rem; }
+
+  .task-form {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 2rem;
+  }
+  .task-form input[type="text"] {
+    flex: 1;
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
+  }
+  .task-form select {
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    background: white;
+  }
+  .task-form button {
+    padding: 0.75rem 1.5rem;
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 1rem;
+    cursor: pointer;
+  }
+  .task-form button:hover { background: #0056b3; }
+
+  .task-list { list-style: none; }
+
+  .task-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem;
+    border-bottom: 1px solid #eee;
+    transition: background 0.2s, opacity 0.3s;
+  }
+  .task-item:hover { background: #fafafa; }
+  .task-item.done .task-title {
+    text-decoration: line-through;
+    opacity: 0.5;
+  }
+
+  .task-checkbox {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    accent-color: #007bff;
+  }
+  .task-title { flex: 1; }
+
+  .badge {
+    font-size: 0.75rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: 12px;
+    font-weight: 500;
+  }
+  .priority-high { background: #ffe0e0; color: #c0392b; }
+  .priority-normal { background: #e0f0ff; color: #2980b9; }
+  .priority-low { background: #e0ffe0; color: #27ae60; }
+  .pending { background: #fff3e0; color: #e67e22; }
+
+  .task-delete {
+    padding: 0.4rem 0.75rem;
+    background: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8rem;
+  }
+  .task-delete:hover { background: #c82333; }
+
+  .empty-state {
+    text-align: center;
+    color: #aaa;
+    padding: 2rem;
+    font-style: italic;
+  }
+</style>
+
+<style scoped>
+  .task-item:focus-within {
+    outline: 2px solid #007bff;
+    outline-offset: -2px;
+    border-radius: 4px;
+  }
+</style>

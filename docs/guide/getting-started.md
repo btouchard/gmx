@@ -36,12 +36,17 @@ gmx
 Create a file named `hello.gmx`:
 
 ```gmx
+<script>
+service Database {
+  provider: "sqlite"
+  url:      string @env("DATABASE_URL")
+}
+
 model Message {
   id:      uuid    @pk @default(uuid_v4)
   content: string  @min(1) @max(255)
 }
 
-<script>
 func listMessages() error {
   let messages = try Message.all()
   return render(messages)
@@ -64,7 +69,7 @@ func createMessage(content: string) error {
 <head>
   <meta charset="UTF-8">
   <title>Hello GMX</title>
-  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+  <script src="https://unpkg.com/htmx.org@2.0.4"></script>
 </head>
 <body>
   <h1>Messages</h1>

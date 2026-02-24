@@ -4,12 +4,16 @@ Les modèles GMX définissent la structure de votre base de données avec valida
 
 ## Déclaration de Base
 
+Les modèles sont déclarés dans le bloc `<script>` :
+
 ```gmx
+<script>
 model Task {
   id:    uuid   @pk @default(uuid_v4)
   title: string @min(3) @max(255)
   done:  bool   @default(false)
 }
+</script>
 ```
 
 **Génère :**
@@ -55,6 +59,7 @@ func (t *Task) BeforeCreate(tx *gorm.DB) error {
 ### Relations
 
 ```gmx
+<script>
 model User {
   id:    uuid   @pk @default(uuid_v4)
   email: string @unique @email
@@ -67,6 +72,7 @@ model Post {
   user:   User @relation(references: [id])
   title:  string
 }
+</script>
 ```
 
 **Génère :**
@@ -196,10 +202,12 @@ Génère : `gorm:"unique"`
 #### `@scoped` — Multi-Tenancy Automatique
 
 ```gmx
+<script>
 model Post {
   tenantId: uuid @scoped
   title:    string
 }
+</script>
 ```
 
 **Toutes les queries sont automatiquement scopées** :
@@ -218,10 +226,12 @@ db.Save(&post)
 #### `@relation(references: [field])` — Foreign Key
 
 ```gmx
+<script>
 model Post {
   userId: uuid
   user:   User @relation(references: [id])
 }
+</script>
 ```
 
 Génère :
@@ -306,16 +316,19 @@ if err := TaskDelete(ctx.DB, task); err != nil {
 ### Modèle Simple
 
 ```gmx
+<script>
 model User {
   id:        uuid    @pk @default(uuid_v4)
   email:     string  @email @unique
   createdAt: datetime
 }
+</script>
 ```
 
 ### Relation One-to-Many
 
 ```gmx
+<script>
 model Author {
   id:    uuid   @pk @default(uuid_v4)
   name:  string @min(2) @max(100)
@@ -329,11 +342,13 @@ model Book {
   title:    string @min(1) @max(255)
   isbn:     string @unique
 }
+</script>
 ```
 
 ### Multi-Tenant avec Scoped
 
 ```gmx
+<script>
 model Organization {
   id:   uuid   @pk @default(uuid_v4)
   name: string @min(3) @max(100)
@@ -346,6 +361,7 @@ model Project {
   org:      Organization @relation(references: [id])
   title:    string @min(3) @max(255)
 }
+</script>
 ```
 
 **Utilisation dans le script** :

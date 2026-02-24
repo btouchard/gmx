@@ -233,9 +233,7 @@ gmx/
 │           ├── errors.go        # Error handling
 │           └── errors_test.go
 └── examples/
-    ├── example.gmx
-    ├── todo.gmx
-    └── services.gmx
+    └── demo.gmx           # Full feature showcase
 ```
 
 ## Flow Détaillé

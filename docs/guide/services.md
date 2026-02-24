@@ -18,10 +18,12 @@ GMX supporte actuellement 4 types de providers :
 ### SQLite
 
 ```gmx
+<script>
 service Database {
   provider: "sqlite"
   url:      string @env("DATABASE_URL")
 }
+</script>
 ```
 
 **Génère** :
@@ -54,10 +56,12 @@ if err != nil {
 ### PostgreSQL
 
 ```gmx
+<script>
 service Database {
   provider: "postgres"
   url:      string @env("DATABASE_URL")
 }
+</script>
 ```
 
 **Génère** :
@@ -79,12 +83,14 @@ export DATABASE_URL="postgres://user:pass@localhost/dbname"  # PostgreSQL
 ### Configuration
 
 ```gmx
+<script>
 service Mailer {
   provider: "smtp"
   host:     string @env("SMTP_HOST")
   pass:     string @env("SMTP_PASS")
   func send(to: string, subject: string, body: string) error
 }
+</script>
 ```
 
 **Génère** :
@@ -151,6 +157,7 @@ func newMailerService(cfg *MailerConfig) MailerService {
 Vous pouvez ajouter plus de configuration :
 
 ```gmx
+<script>
 service Mailer {
   provider: "smtp"
   host:     string @env("SMTP_HOST")
@@ -160,6 +167,7 @@ service Mailer {
   from:     string @env("SMTP_FROM")
   func send(to: string, subject: string, body: string) error
 }
+</script>
 ```
 
 GMX détecte automatiquement les champs `user`, `port`, `from` et les utilise dans l'implémentation.
@@ -178,11 +186,13 @@ export SMTP_FROM="noreply@yourapp.com"
 ### Configuration
 
 ```gmx
+<script>
 service GitHub {
   provider: "http"
   baseUrl:  string @env("GITHUB_API_URL")
   apiKey:   string @env("GITHUB_TOKEN")
 }
+</script>
 ```
 
 **Génère** :
@@ -282,12 +292,14 @@ if cfg.Host == "" {
 ### Déclaration
 
 ```gmx
+<script>
 service Mailer {
   provider: "smtp"
   host:     string @env("SMTP_HOST")
   pass:     string @env("SMTP_PASS")
   func send(to: string, subject: string, body: string) error
 }
+</script>
 ```
 
 ### Interface Générée
@@ -320,6 +332,7 @@ func (s *mailerStub) Send(to string, subject string, body string) error {
 ### Application avec SMTP
 
 ```gmx
+<script>
 service Database {
   provider: "sqlite"
   url:      string @env("DATABASE_URL")
@@ -337,13 +350,11 @@ model User {
   email: string @email @unique
 }
 
-<script>
 func notifyUser(userId: uuid, message: string) error {
   let user = try User.find(userId)
 
   // TODO: Call mailer service
-  // let err = mailer.send(user.email, "Notification", message)
-  // if err != nil { return err }
+  // try Mailer.send(user.email, "Notification", message)
 
   return nil
 }
@@ -361,6 +372,7 @@ export SMTP_PASS="your-app-password"
 ### Multi-Database
 
 ```gmx
+<script>
 service PrimaryDB {
   provider: "postgres"
   url:      string @env("PRIMARY_DB_URL")
@@ -370,6 +382,7 @@ service AnalyticsDB {
   provider: "postgres"
   url:      string @env("ANALYTICS_DB_URL")
 }
+</script>
 ```
 
 !!!warning "Limitation"

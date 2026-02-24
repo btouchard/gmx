@@ -4,56 +4,56 @@ A GMX component is a single `.gmx` file that defines a complete feature: models,
 
 ## File Structure
 
-A `.gmx` file can contain four sections in **any order**:
+A `.gmx` file can contain up to four sections:
 
 ```gmx
-model Task { ... }          // Database models
-service Database { ... }    // External services
-<script>...</script>        // Business logic
+<script>
+  // Models, services, constants, variables, functions
+  model Task { ... }
+  service Database { ... }
+  const APP_NAME = "My App"
+  func listTasks() error { ... }
+</script>
 <template>...</template>    // HTML + HTMX
-<style scoped>...</style>   // CSS
+<style>...</style>          // Global CSS
+<style scoped>...</style>   // Scoped CSS
 ```
 
-All sections are optional, but most components will have at least models, script, and template.
+All sections are optional, but most components will have at least script and template.
 
 ## Complete Example
 
-Here's a full-featured todo component (`examples/example.gmx`):
+See `examples/demo.gmx` for a full-featured showcase. Here's a simplified version:
 
 ```gmx
+<script>
+const APP_NAME = "Todo App"
+
 service Database {
   provider: "sqlite"
   url:      string @env("DATABASE_URL")
-}
-
-service Mailer {
-  provider: "smtp"
-  host:     string @env("SMTP_HOST")
-  pass:     string @env("SMTP_PASS")
-  func send(to: string, subject: string, body: string) error
 }
 
 model Task {
   id:        uuid    @pk @default(uuid_v4)
   title:     string  @min(3) @max(255)
   done:      bool    @default(false)
+  priority:  int     @min(1) @max(5) @default(3)
   createdAt: datetime
-}
-
-<script>
-func toggleTask(id: uuid) error {
-  let task = try Task.find(id)
-  task.done = !task.done
-  try task.save()
-  return render(task)
 }
 
 func createTask(title: string) error {
   if title == "" {
     return error("Title cannot be empty")
   }
-
   const task = Task{title: title, done: false}
+  try task.save()
+  return render(task)
+}
+
+func toggleTask(id: uuid) error {
+  let task = try Task.find(id)
+  task.done = !task.done
   try task.save()
   return render(task)
 }
@@ -77,35 +77,32 @@ func deleteTask(id: uuid) error {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>GMX Todo App</title>
-  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+  <script src="https://unpkg.com/htmx.org@2.0.4"></script>
 </head>
 <body>
   <div class="container">
-    <h1>📝 GMX Todo App</h1>
+    <h1>GMX Todo App</h1>
 
-    <form class="task-form" hx-post="{{route "createTask"}}" hx-target="#task-list" hx-swap="beforeend">
+    <form hx-post="{{route "createTask"}}" hx-target="#task-list" hx-swap="beforeend">
       <input type="text" name="title" placeholder="What needs to be done?" required />
       <button type="submit">Add Task</button>
     </form>
 
-    <ul id="task-list" class="task-list">
+    <ul id="task-list">
       {{range .Tasks}}
       <li class="task-item {{if .Done}}done{{end}}" id="task-{{.ID}}">
-        <input
-          type="checkbox"
-          class="task-checkbox"
-          {{if .Done}}checked{{end}}
+        <input type="checkbox" {{if .Done}}checked{{end}}
           hx-patch="{{route "toggleTask"}}?id={{.ID}}"
           hx-target="#task-{{.ID}}"
-          hx-swap="outerHTML"
-        />
-        <span class="task-title">{{.Title}}</span>
+          hx-swap="outerHTML" />
+        <span>{{.Title}}</span>
+        {{if gt .Priority 3}}
+          <span class="badge">High</span>
+        {{end}}
         <button
-          class="task-delete"
           hx-delete="{{route "deleteTask"}}?id={{.ID}}"
           hx-target="#task-{{.ID}}"
-          hx-swap="outerHTML swap:1s"
-        >
+          hx-swap="outerHTML swap:300ms">
           Delete
         </button>
       </li>
@@ -116,48 +113,39 @@ func deleteTask(id: uuid) error {
 </html>
 </template>
 
+<style>
+  .task-item { padding: 1rem; border-bottom: 1px solid #eee; }
+  .task-item.done span { text-decoration: line-through; opacity: 0.5; }
+  .badge { font-size: 0.75rem; background: #ffe0e0; color: #c0392b; padding: 0.15rem 0.5rem; border-radius: 12px; }
+</style>
+
 <style scoped>
-  .task-item:hover {
-    background: #f5f5f5;
-  }
+  .task-item:hover { background: #f5f5f5; }
 </style>
 ```
 
 ## Section Breakdown
 
-### 1. Models
+### 1. Script (`<script>`)
 
-Define your database schema:
+The `<script>` block contains all logic: models, services, constants, variables, and functions.
 
 ```gmx
+<script>
+const APP_NAME = "My App"
+let debug: bool = false
+
+service Database {
+  provider: "sqlite"
+  url:      string @env("DATABASE_URL")
+}
+
 model Task {
   id:    uuid   @pk @default(uuid_v4)
   title: string @min(3) @max(255)
   done:  bool   @default(false)
 }
-```
 
-Generates GORM struct with validation. See [Models](models.md) for details.
-
-### 2. Services
-
-Configure external dependencies:
-
-```gmx
-service Database {
-  provider: "sqlite"
-  url:      string @env("DATABASE_URL")
-}
-```
-
-Supports: `sqlite`, `postgres`, `smtp`, `http`. See [Services](services.md).
-
-### 3. Script
-
-Business logic in GMX Script (TypeScript-inspired):
-
-```gmx
-<script>
 func createTask(title: string) error {
   const task = Task{title: title, done: false}
   try task.save()
@@ -166,9 +154,9 @@ func createTask(title: string) error {
 </script>
 ```
 
-Transpiles to Go. See [Script](script.md).
+See [Models](models.md), [Services](services.md), and [Script](script.md).
 
-### 4. Template
+### 2. Template (`<template>`)
 
 HTML with Go templates and HTMX:
 
@@ -183,43 +171,44 @@ HTML with Go templates and HTMX:
 
 See [Templates](templates.md).
 
-### 5. Style
+### 3. Style (`<style>` / `<style scoped>`)
 
-Scoped or global CSS:
+Global or scoped CSS:
 
 ```gmx
+<style>
+  body { font-family: sans-serif; }
+</style>
+
 <style scoped>
   .task-item { padding: 10px; }
 </style>
 ```
-
-`scoped` attribute isolates styles to this component.
 
 ## Section Order
 
 Sections can appear in **any order**. These are equivalent:
 
 ```gmx
-// Model-first
-model Task { ... }
 <script>...</script>
 <template>...</template>
+<style>...</style>
 ```
 
 ```gmx
-// Template-first
 <template>...</template>
+<style>...</style>
 <script>...</script>
-model Task { ... }
 ```
 
-**Best Practice:** Put models and services first for readability.
+**Best Practice:** Put `<script>` first, then `<template>`, then `<style>`.
 
 ## Multiple Models
 
-You can define multiple models in one file:
+You can define multiple models in one `<script>` block:
 
 ```gmx
+<script>
 model User {
   id:    uuid   @pk @default(uuid_v4)
   email: string @email @unique
@@ -227,14 +216,17 @@ model User {
 
 model Post {
   id:     uuid   @pk @default(uuid_v4)
-  userId: uuid   @relation(references: [User.id])
+  userId: uuid
+  user:   User   @relation(references: [id])
   title:  string
 }
+</script>
 ```
 
 ## Multiple Services
 
 ```gmx
+<script>
 service Database {
   provider: "postgres"
   url: string @env("DATABASE_URL")
@@ -245,6 +237,7 @@ service Mailer {
   host: string @env("SMTP_HOST")
   func send(to: string, subject: string, body: string) error
 }
+</script>
 ```
 
 ## Minimal Component

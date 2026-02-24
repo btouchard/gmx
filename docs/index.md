@@ -13,36 +13,54 @@ GMX is a declarative language that combines models, business logic, and template
 ## Quick Example
 
 ```gmx
+<script>
+service Database {
+  provider: "sqlite"
+  url:      string @env("DATABASE_URL")
+}
+
 model Task {
   id:    uuid    @pk @default(uuid_v4)
   title: string  @min(3) @max(255)
   done:  bool    @default(false)
 }
 
-<script>
 func toggleTask(id: uuid) error {
   let task = try Task.find(id)
   task.done = !task.done
   try task.save()
   return render(task)
 }
+
+func createTask(title: string) error {
+  if title == "" {
+    return error("Title cannot be empty")
+  }
+  const task = Task{title: title, done: false}
+  try task.save()
+  return render(task)
+}
 </script>
 
 <template>
-<li id="task-{{.ID}}">
-  <input type="checkbox" {{if .Done}}checked{{end}}
-    hx-patch="{{route "toggleTask"}}?id={{.ID}}"
-    hx-target="#task-{{.ID}}"
-    hx-swap="outerHTML" />
-  <span>{{.Title}}</span>
-</li>
+<ul id="task-list">
+  {{range .Tasks}}
+  <li class="task-item {{if .Done}}done{{end}}" id="task-{{.ID}}">
+    <input type="checkbox" {{if .Done}}checked{{end}}
+      hx-patch="{{route "toggleTask"}}?id={{.ID}}"
+      hx-target="#task-{{.ID}}"
+      hx-swap="outerHTML" />
+    <span>{{.Title}}</span>
+  </li>
+  {{end}}
+</ul>
 </template>
 ```
 
 **Compiles to:**
 
 ```bash
-gmx todo.gmx main.go
+gmx demo.gmx main.go
 go run main.go
 # → Full-featured web server with SQLite, CSRF protection, HTMX handlers
 ```
@@ -53,9 +71,9 @@ go run main.go
 
 Route references are validated at compile time. No more broken HTMX attributes.
 
-```gmx
-{{route "toggleTask"}}  ✅ Compile-time check
-{{route "nonExistent"}} ❌ Compilation error
+```html
+{{route "toggleTask"}}  <!-- ✅ Compile-time check -->
+{{route "nonExistent"}} <!-- ❌ Compilation error -->
 ```
 
 ### Automatic CSRF Protection
@@ -74,10 +92,12 @@ Double-submit cookie pattern with zero configuration. POST/PATCH/DELETE requests
 Use `@scoped` annotation for automatic tenant isolation:
 
 ```gmx
+<script>
 model Post {
   tenantId: uuid @scoped
   title:    string
 }
+</script>
 ```
 
 All queries are automatically scoped to the current tenant.

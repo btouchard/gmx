@@ -185,10 +185,12 @@ func TaskSave(db *gorm.DB, obj *Task) error {
 GMX génère des validations pour ces annotations :
 
 ```gmx
+<script>
 model Task {
   title: string @min(3) @max(255)
   email: string @email
 }
+</script>
 ```
 
 **Code généré** :
@@ -282,10 +284,12 @@ db.First(&task, "id = ?", id)
 Les modèles avec `@scoped` sont automatiquement filtrés par tenant :
 
 ```gmx
+<script>
 model Post {
   tenantId: uuid @scoped
   title:    string
 }
+</script>
 ```
 
 **Génère** :

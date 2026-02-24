@@ -185,8 +185,10 @@ funcMap := template.FuncMap{
 GMX génère automatiquement une structure `PageData` avec tous les modèles :
 
 ```gmx
+<script>
 model Task { ... }
 model User { ... }
+</script>
 ```
 
 **Génère** :
@@ -291,13 +293,13 @@ func renderFragment(w http.ResponseWriter, name string, data interface{}) error 
 ## Exemple Complet
 
 ```gmx
+<script>
 model Task {
   id:    uuid   @pk @default(uuid_v4)
   title: string @min(3) @max(255)
   done:  bool   @default(false)
 }
 
-<script>
 func toggleTask(id: uuid) error {
   let task = try Task.find(id)
   task.done = !task.done
