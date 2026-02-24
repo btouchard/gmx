@@ -8,7 +8,8 @@ import (
 
 // Integration test: Parse the complete Phase 2 example and verify all details
 func TestPhase2Integration(t *testing.T) {
-	input := `model Task {
+	input := `<script>
+model Task {
   id:         uuid    @pk @default(uuid_v4)
   title:      string  @min(3) @max(255)
   done:       bool    @default(false)
@@ -22,7 +23,6 @@ model User {
   tasks: Task[]
 }
 
-<script>
 func toggleTask(id: uuid) error {
   let task = try Task.find(id)
   task.done = !task.done

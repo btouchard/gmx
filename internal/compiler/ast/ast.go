@@ -88,9 +88,11 @@ func (a *Annotation) SimpleArg() string {
 
 // ScriptBlock contains GMX Script code (TypeScript-inspired syntax)
 type ScriptBlock struct {
-	Source    string       // Raw source (preserved for fallback)
-	Funcs     []*FuncDecl  // Parsed functions (nil if parsing failed)
-	StartLine int          // Line offset in the .gmx file for source maps
+	Source    string          // Raw source (preserved for fallback)
+	Models    []*ModelDecl    // Parsed model declarations
+	Services  []*ServiceDecl  // Parsed service declarations
+	Funcs     []*FuncDecl     // Parsed functions
+	StartLine int             // Line offset in the .gmx file for source maps
 }
 
 func (s *ScriptBlock) TokenLiteral() string { return "script" }

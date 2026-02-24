@@ -1,4 +1,4 @@
---- model ---
+<script>
 model Task {
   id:         uuid    @pk @default(uuid_v4)
   title:      string  @min(3) @max(255)
@@ -7,7 +7,6 @@ model Task {
   author:     User    @relation(references: [id])
 }
 
---- script ---
 func toggleTask(id: uuid) error {
   let task = try Task.find(id)
   task.done = !task.done
@@ -18,8 +17,9 @@ func toggleTask(id: uuid) error {
 func getTitle(t: Task) string {
   return "Tâche: {t.title}"
 }
+</script>
 
---- template ---
+<template>
 <div class="task-item" id="task-{Task.id}">
   <span class={Task.done ? "line-through" : ""}>
     {getTitle(Task)}
@@ -32,7 +32,9 @@ func getTitle(t: Task) string {
     {Task.done ? "Annuler" : "Terminer"}
   </button>
 </div>
+</template>
 
---- style ---
+<style scoped>
 .task-item { padding: 1rem; border-bottom: 1px solid #eee; }
 .completed { opacity: 0.5; }
+</style>

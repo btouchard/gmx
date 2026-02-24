@@ -7,7 +7,8 @@ import (
 	gmxparser "gmx/internal/compiler/parser"
 )
 func main() {
-	input := `model User {
+	input := `<script>
+model User {
   id: uuid @pk
   email: string @unique
   posts: Post[]
@@ -17,6 +18,8 @@ model Post {
   title: string
   user: User @relation(references: [id])
 }
+</script>
+
 <template>
 <section id="feed">
   {{range .Posts}}

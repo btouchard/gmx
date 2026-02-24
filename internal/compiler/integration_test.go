@@ -13,7 +13,8 @@ import (
 
 // TestFullPipeline tests the complete compilation pipeline
 func TestFullPipeline(t *testing.T) {
-	input := `model User {
+	input := `<script>
+model User {
   id: uuid @pk
   email: string @unique
   posts: Post[]
@@ -25,7 +26,6 @@ model Post {
   user: User @relation(references: [id])
 }
 
-<script>
 // Go handler code — will be wired in Phase 4
 // For now, the generator ignores this block
 </script>
@@ -138,10 +138,12 @@ model Post {
 
 // TestMinimalFile tests generating code from a minimal GMX file
 func TestMinimalFile(t *testing.T) {
-	input := `model Task {
+	input := `<script>
+model Task {
   id: uuid @pk
   title: string
-}`
+}
+</script>`
 
 	l := lexer.New(input)
 	p := gmxparser.New(l)
@@ -225,7 +227,8 @@ h1 { color: blue; }
 
 // TestComplexRelations tests a file with complex model relationships
 func TestComplexRelations(t *testing.T) {
-	input := `model Tenant {
+	input := `<script>
+model Tenant {
   id: uuid @pk
   name: string
 }
@@ -242,6 +245,7 @@ model Post {
   title: string
   author: User @relation(references: [id])
 }
+</script>
 `
 
 	l := lexer.New(input)

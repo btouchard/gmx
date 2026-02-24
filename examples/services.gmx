@@ -1,4 +1,4 @@
---- service ---
+<script>
 service Database {
   provider: "postgres"
   url:      string @env("DATABASE_URL")
@@ -10,3 +10,4 @@ service Mailer {
   pass:     string @env("SMTP_PASS")
   func send(to: string, subject: string, body: string) error
 }
+</script>

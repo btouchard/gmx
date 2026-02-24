@@ -12,13 +12,13 @@ func TestParseFloatLiteral(t *testing.T) {
 		return 3.14
 	}`
 
-	funcs, errors := Parse(input, 0)
+	result, errors := Parse(input, 0)
 
 	if len(errors) > 0 {
 		t.Fatalf("parse errors: %v", errors)
 	}
 
-	fn := funcs[0]
+	fn := result.Funcs[0]
 	returnStmt, ok := fn.Body[0].(*ast.ReturnStmt)
 	if !ok {
 		t.Fatalf("expected ReturnStmt, got %T", fn.Body[0])
@@ -39,13 +39,13 @@ func TestParseGroupedExpression(t *testing.T) {
 		return (5 + 3) * 2
 	}`
 
-	funcs, errors := Parse(input, 0)
+	result, errors := Parse(input, 0)
 
 	if len(errors) > 0 {
 		t.Fatalf("parse errors: %v", errors)
 	}
 
-	fn := funcs[0]
+	fn := result.Funcs[0]
 	returnStmt, ok := fn.Body[0].(*ast.ReturnStmt)
 	if !ok {
 		t.Fatalf("expected ReturnStmt, got %T", fn.Body[0])
@@ -79,13 +79,13 @@ func TestParseBooleanLiterals(t *testing.T) {
 		return nil
 	}`
 
-	funcs, errors := Parse(input, 0)
+	result, errors := Parse(input, 0)
 
 	if len(errors) > 0 {
 		t.Fatalf("parse errors: %v", errors)
 	}
 
-	fn := funcs[0]
+	fn := result.Funcs[0]
 
 	// First let: x = true
 	let1, ok := fn.Body[0].(*ast.LetStmt)
@@ -138,13 +138,13 @@ func TestParseRenderExpressionEdgeCases(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			funcs, errors := Parse(tt.input, 0)
+			result, errors := Parse(tt.input, 0)
 
 			if len(errors) > 0 {
 				t.Fatalf("parse errors: %v", errors)
 			}
 
-			fn := funcs[0]
+			fn := result.Funcs[0]
 			returnStmt, ok := fn.Body[0].(*ast.ReturnStmt)
 			if !ok {
 				t.Fatalf("expected ReturnStmt, got %T", fn.Body[0])
@@ -170,13 +170,13 @@ func TestParseErrorExpression(t *testing.T) {
 		return nil
 	}`
 
-	funcs, errors := Parse(input, 0)
+	result, errors := Parse(input, 0)
 
 	if len(errors) > 0 {
 		t.Fatalf("parse errors: %v", errors)
 	}
 
-	fn := funcs[0]
+	fn := result.Funcs[0]
 	ifStmt, ok := fn.Body[0].(*ast.IfStmt)
 	if !ok {
 		t.Fatalf("expected IfStmt, got %T", fn.Body[0])
@@ -209,13 +209,13 @@ func TestParseCtxExpression(t *testing.T) {
 		return nil
 	}`
 
-	funcs, errors := Parse(input, 0)
+	result, errors := Parse(input, 0)
 
 	if len(errors) > 0 {
 		t.Fatalf("parse errors: %v", errors)
 	}
 
-	fn := funcs[0]
+	fn := result.Funcs[0]
 
 	// First let: tenantID = ctx.tenant
 	let1, ok := fn.Body[0].(*ast.LetStmt)
@@ -255,13 +255,13 @@ func TestParseComplexBinaryExpressions(t *testing.T) {
 		return a == b && c != d || e < f
 	}`
 
-	funcs, errors := Parse(input, 0)
+	result, errors := Parse(input, 0)
 
 	if len(errors) > 0 {
 		t.Fatalf("parse errors: %v", errors)
 	}
 
-	fn := funcs[0]
+	fn := result.Funcs[0]
 	returnStmt, ok := fn.Body[0].(*ast.ReturnStmt)
 	if !ok {
 		t.Fatalf("expected ReturnStmt, got %T", fn.Body[0])
@@ -279,13 +279,13 @@ func TestParseChainedMemberAccess(t *testing.T) {
 		return user.profile.name
 	}`
 
-	funcs, errors := Parse(input, 0)
+	result, errors := Parse(input, 0)
 
 	if len(errors) > 0 {
 		t.Fatalf("parse errors: %v", errors)
 	}
 
-	fn := funcs[0]
+	fn := result.Funcs[0]
 	returnStmt, ok := fn.Body[0].(*ast.ReturnStmt)
 	if !ok {
 		t.Fatalf("expected ReturnStmt, got %T", fn.Body[0])
@@ -317,13 +317,13 @@ func TestParseFuncNoParams(t *testing.T) {
 		return nil
 	}`
 
-	funcs, errors := Parse(input, 0)
+	result, errors := Parse(input, 0)
 
 	if len(errors) > 0 {
 		t.Fatalf("parse errors: %v", errors)
 	}
 
-	fn := funcs[0]
+	fn := result.Funcs[0]
 	if len(fn.Params) != 0 {
 		t.Errorf("expected 0 params, got %d", len(fn.Params))
 	}
@@ -341,13 +341,13 @@ func TestParseIfWithoutElse(t *testing.T) {
 		return nil
 	}`
 
-	funcs, errors := Parse(input, 0)
+	result, errors := Parse(input, 0)
 
 	if len(errors) > 0 {
 		t.Fatalf("parse errors: %v", errors)
 	}
 
-	fn := funcs[0]
+	fn := result.Funcs[0]
 	ifStmt, ok := fn.Body[0].(*ast.IfStmt)
 	if !ok {
 		t.Fatalf("expected IfStmt, got %T", fn.Body[0])

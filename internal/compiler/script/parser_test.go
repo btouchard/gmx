@@ -10,17 +10,17 @@ func TestParseFuncDecl(t *testing.T) {
 		return "Hello"
 	}`
 
-	funcs, errors := Parse(input, 0)
+	result, errors := Parse(input, 0)
 
 	if len(errors) > 0 {
 		t.Fatalf("parse errors: %v", errors)
 	}
 
-	if len(funcs) != 1 {
-		t.Fatalf("expected 1 function, got %d", len(funcs))
+	if len(result.Funcs) != 1 {
+		t.Fatalf("expected 1 function, got %d", len(result.Funcs))
 	}
 
-	fn := funcs[0]
+	fn := result.Funcs[0]
 	if fn.Name != "greet" {
 		t.Errorf("expected name 'greet', got %q", fn.Name)
 	}
@@ -52,13 +52,13 @@ func TestParseLetStatement(t *testing.T) {
 		return x
 	}`
 
-	funcs, errors := Parse(input, 0)
+	result, errors := Parse(input, 0)
 
 	if len(errors) > 0 {
 		t.Fatalf("parse errors: %v", errors)
 	}
 
-	fn := funcs[0]
+	fn := result.Funcs[0]
 	if len(fn.Body) != 2 {
 		t.Fatalf("expected 2 statements, got %d", len(fn.Body))
 	}
@@ -83,13 +83,13 @@ func TestParseConstStatement(t *testing.T) {
 		return x
 	}`
 
-	funcs, errors := Parse(input, 0)
+	result, errors := Parse(input, 0)
 
 	if len(errors) > 0 {
 		t.Fatalf("parse errors: %v", errors)
 	}
 
-	fn := funcs[0]
+	fn := result.Funcs[0]
 	letStmt, ok := fn.Body[0].(*ast.LetStmt)
 	if !ok {
 		t.Fatalf("expected LetStmt, got %T", fn.Body[0])
@@ -106,13 +106,13 @@ func TestParseTryExpression(t *testing.T) {
 		return task
 	}`
 
-	funcs, errors := Parse(input, 0)
+	result, errors := Parse(input, 0)
 
 	if len(errors) > 0 {
 		t.Fatalf("parse errors: %v", errors)
 	}
 
-	fn := funcs[0]
+	fn := result.Funcs[0]
 	letStmt, ok := fn.Body[0].(*ast.LetStmt)
 	if !ok {
 		t.Fatalf("expected LetStmt, got %T", fn.Body[0])
@@ -152,13 +152,13 @@ func TestParseReturnRender(t *testing.T) {
 		return render(task)
 	}`
 
-	funcs, errors := Parse(input, 0)
+	result, errors := Parse(input, 0)
 
 	if len(errors) > 0 {
 		t.Fatalf("parse errors: %v", errors)
 	}
 
-	fn := funcs[0]
+	fn := result.Funcs[0]
 	returnStmt, ok := fn.Body[0].(*ast.ReturnStmt)
 	if !ok {
 		t.Fatalf("expected ReturnStmt, got %T", fn.Body[0])
@@ -192,13 +192,13 @@ func TestParseIfElse(t *testing.T) {
 		}
 	}`
 
-	funcs, errors := Parse(input, 0)
+	result, errors := Parse(input, 0)
 
 	if len(errors) > 0 {
 		t.Fatalf("parse errors: %v", errors)
 	}
 
-	fn := funcs[0]
+	fn := result.Funcs[0]
 	ifStmt, ok := fn.Body[0].(*ast.IfStmt)
 	if !ok {
 		t.Fatalf("expected IfStmt, got %T", fn.Body[0])
@@ -231,13 +231,13 @@ func TestParseAssignment(t *testing.T) {
 		return task
 	}`
 
-	funcs, errors := Parse(input, 0)
+	result, errors := Parse(input, 0)
 
 	if len(errors) > 0 {
 		t.Fatalf("parse errors: %v", errors)
 	}
 
-	fn := funcs[0]
+	fn := result.Funcs[0]
 	assignStmt, ok := fn.Body[0].(*ast.AssignStmt)
 	if !ok {
 		t.Fatalf("expected AssignStmt, got %T", fn.Body[0])
@@ -269,13 +269,13 @@ func TestParseMemberAccess(t *testing.T) {
 		return task.title
 	}`
 
-	funcs, errors := Parse(input, 0)
+	result, errors := Parse(input, 0)
 
 	if len(errors) > 0 {
 		t.Fatalf("parse errors: %v", errors)
 	}
 
-	fn := funcs[0]
+	fn := result.Funcs[0]
 	returnStmt, ok := fn.Body[0].(*ast.ReturnStmt)
 	if !ok {
 		t.Fatalf("expected ReturnStmt, got %T", fn.Body[0])
@@ -306,13 +306,13 @@ func TestParseMethodCall(t *testing.T) {
 		return task
 	}`
 
-	funcs, errors := Parse(input, 0)
+	result, errors := Parse(input, 0)
 
 	if len(errors) > 0 {
 		t.Fatalf("parse errors: %v", errors)
 	}
 
-	fn := funcs[0]
+	fn := result.Funcs[0]
 	exprStmt, ok := fn.Body[0].(*ast.ExprStmt)
 	if !ok {
 		t.Fatalf("expected ExprStmt, got %T", fn.Body[0])
@@ -344,13 +344,13 @@ func SkipTestParseStringInterpolation(t *testing.T) {
 		return "Tâche: {t.title}"
 	}`
 
-	funcs, errors := Parse(input, 0)
+	result, errors := Parse(input, 0)
 
 	if len(errors) > 0 {
 		t.Fatalf("parse errors: %v", errors)
 	}
 
-	fn := funcs[0]
+	fn := result.Funcs[0]
 	returnStmt, ok := fn.Body[0].(*ast.ReturnStmt)
 	if !ok {
 		t.Fatalf("expected ReturnStmt, got %T", fn.Body[0])
@@ -410,13 +410,13 @@ func TestParseBinaryExpr(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		funcs, errors := Parse(tt.input, 0)
+		result, errors := Parse(tt.input, 0)
 
 		if len(errors) > 0 {
 			t.Fatalf("parse errors for %q: %v", tt.input, errors)
 		}
 
-		fn := funcs[0]
+		fn := result.Funcs[0]
 		returnStmt, ok := fn.Body[0].(*ast.ReturnStmt)
 		if !ok {
 			t.Fatalf("expected ReturnStmt, got %T", fn.Body[0])
@@ -438,13 +438,13 @@ func TestParseUnaryExpr(t *testing.T) {
 		return !task.done
 	}`
 
-	funcs, errors := Parse(input, 0)
+	result, errors := Parse(input, 0)
 
 	if len(errors) > 0 {
 		t.Fatalf("parse errors: %v", errors)
 	}
 
-	fn := funcs[0]
+	fn := result.Funcs[0]
 	returnStmt, ok := fn.Body[0].(*ast.ReturnStmt)
 	if !ok {
 		t.Fatalf("expected ReturnStmt, got %T", fn.Body[0])
@@ -466,13 +466,13 @@ func TestParseStructLiteral(t *testing.T) {
 		return post
 	}`
 
-	funcs, errors := Parse(input, 0)
+	result, errors := Parse(input, 0)
 
 	if len(errors) > 0 {
 		t.Fatalf("parse errors: %v", errors)
 	}
 
-	fn := funcs[0]
+	fn := result.Funcs[0]
 	letStmt, ok := fn.Body[0].(*ast.LetStmt)
 	if !ok {
 		t.Fatalf("expected LetStmt, got %T", fn.Body[0])
@@ -511,13 +511,13 @@ func TestParseErrorExpr(t *testing.T) {
 		return error("Title required")
 	}`
 
-	funcs, errors := Parse(input, 0)
+	result, errors := Parse(input, 0)
 
 	if len(errors) > 0 {
 		t.Fatalf("parse errors: %v", errors)
 	}
 
-	fn := funcs[0]
+	fn := result.Funcs[0]
 	returnStmt, ok := fn.Body[0].(*ast.ReturnStmt)
 	if !ok {
 		t.Fatalf("expected ReturnStmt, got %T", fn.Body[0])
@@ -544,13 +544,13 @@ func TestParseCtxAccess(t *testing.T) {
 		return tenant
 	}`
 
-	funcs, errors := Parse(input, 0)
+	result, errors := Parse(input, 0)
 
 	if len(errors) > 0 {
 		t.Fatalf("parse errors: %v", errors)
 	}
 
-	fn := funcs[0]
+	fn := result.Funcs[0]
 	letStmt, ok := fn.Body[0].(*ast.LetStmt)
 	if !ok {
 		t.Fatalf("expected LetStmt, got %T", fn.Body[0])
@@ -574,17 +574,17 @@ func TestParseCompleteFunction(t *testing.T) {
 		return render(task)
 	}`
 
-	funcs, errors := Parse(input, 0)
+	result, errors := Parse(input, 0)
 
 	if len(errors) > 0 {
 		t.Fatalf("parse errors: %v", errors)
 	}
 
-	if len(funcs) != 1 {
-		t.Fatalf("expected 1 function, got %d", len(funcs))
+	if len(result.Funcs) != 1 {
+		t.Fatalf("expected 1 function, got %d", len(result.Funcs))
 	}
 
-	fn := funcs[0]
+	fn := result.Funcs[0]
 	if fn.Name != "toggleTask" {
 		t.Errorf("expected name 'toggleTask', got %q", fn.Name)
 	}
@@ -634,22 +634,22 @@ func TestParseMultipleFunctions(t *testing.T) {
 		}
 	`
 
-	funcs, errors := Parse(input, 0)
+	result, errors := Parse(input, 0)
 
 	if len(errors) > 0 {
 		t.Fatalf("parse errors: %v", errors)
 	}
 
-	if len(funcs) != 2 {
-		t.Fatalf("expected 2 functions, got %d", len(funcs))
+	if len(result.Funcs) != 2 {
+		t.Fatalf("expected 2 functions, got %d", len(result.Funcs))
 	}
 
-	if funcs[0].Name != "greet" {
-		t.Errorf("expected first function 'greet', got %q", funcs[0].Name)
+	if result.Funcs[0].Name != "greet" {
+		t.Errorf("expected first function 'greet', got %q", result.Funcs[0].Name)
 	}
 
-	if funcs[1].Name != "goodbye" {
-		t.Errorf("expected second function 'goodbye', got %q", funcs[1].Name)
+	if result.Funcs[1].Name != "goodbye" {
+		t.Errorf("expected second function 'goodbye', got %q", result.Funcs[1].Name)
 	}
 }
 
@@ -658,13 +658,13 @@ func TestOperatorPrecedence(t *testing.T) {
 		return a + b * c
 	}`
 
-	funcs, errors := Parse(input, 0)
+	result, errors := Parse(input, 0)
 
 	if len(errors) > 0 {
 		t.Fatalf("parse errors: %v", errors)
 	}
 
-	fn := funcs[0]
+	fn := result.Funcs[0]
 	returnStmt, ok := fn.Body[0].(*ast.ReturnStmt)
 	if !ok {
 		t.Fatalf("expected ReturnStmt, got %T", fn.Body[0])
@@ -706,13 +706,13 @@ func TestParseNestedCalls(t *testing.T) {
 		return render(task)
 	}`
 
-	funcs, errors := Parse(input, 0)
+	result, errors := Parse(input, 0)
 
 	if len(errors) > 0 {
 		t.Fatalf("parse errors: %v", errors)
 	}
 
-	fn := funcs[0]
+	fn := result.Funcs[0]
 	exprStmt, ok := fn.Body[0].(*ast.ExprStmt)
 	if !ok {
 		t.Fatalf("expected ExprStmt, got %T", fn.Body[0])
@@ -765,13 +765,13 @@ func TestParseFloatLiterals(t *testing.T) {
 		return nil
 	}`
 
-	funcs, errors := Parse(input, 0)
+	result, errors := Parse(input, 0)
 
 	if len(errors) > 0 {
 		t.Fatalf("parse errors: %v", errors)
 	}
 
-	fn := funcs[0]
+	fn := result.Funcs[0]
 	if len(fn.Body) < 3 {
 		t.Fatalf("expected at least 3 statements, got %d", len(fn.Body))
 	}
@@ -812,13 +812,13 @@ func TestParseGroupedExpressions(t *testing.T) {
 		return (a + b) * c
 	}`
 
-	funcs, errors := Parse(input, 0)
+	result, errors := Parse(input, 0)
 
 	if len(errors) > 0 {
 		t.Fatalf("parse errors: %v", errors)
 	}
 
-	fn := funcs[0]
+	fn := result.Funcs[0]
 	returnStmt, ok := fn.Body[0].(*ast.ReturnStmt)
 	if !ok {
 		t.Fatalf("expected ReturnStmt, got %T", fn.Body[0])
@@ -851,13 +851,13 @@ func TestParseNestedFunctionCalls(t *testing.T) {
 		return nil
 	}`
 
-	funcs, errors := Parse(input, 0)
+	result, errors := Parse(input, 0)
 
 	if len(errors) > 0 {
 		t.Fatalf("parse errors: %v", errors)
 	}
 
-	fn := funcs[0]
+	fn := result.Funcs[0]
 	letStmt, ok := fn.Body[0].(*ast.LetStmt)
 	if !ok {
 		t.Fatalf("expected LetStmt, got %T", fn.Body[0])
@@ -899,13 +899,13 @@ func TestParseBooleanExpressions(t *testing.T) {
 		return a && b || !c
 	}`
 
-	funcs, errors := Parse(input, 0)
+	result, errors := Parse(input, 0)
 
 	if len(errors) > 0 {
 		t.Fatalf("parse errors: %v", errors)
 	}
 
-	fn := funcs[0]
+	fn := result.Funcs[0]
 	returnStmt, ok := fn.Body[0].(*ast.ReturnStmt)
 	if !ok {
 		t.Fatalf("expected ReturnStmt, got %T", fn.Body[0])
@@ -948,13 +948,13 @@ func TestParseTryWithChaining(t *testing.T) {
 		return nil
 	}`
 
-	funcs, errors := Parse(input, 0)
+	result, errors := Parse(input, 0)
 
 	if len(errors) > 0 {
 		t.Fatalf("parse errors: %v", errors)
 	}
 
-	fn := funcs[0]
+	fn := result.Funcs[0]
 	letStmt, ok := fn.Body[0].(*ast.LetStmt)
 	if !ok {
 		t.Fatalf("expected LetStmt, got %T", fn.Body[0])
@@ -986,17 +986,17 @@ func TestParseEmptyFunctionBody(t *testing.T) {
 	input := `func noop() error {
 	}`
 
-	funcs, errors := Parse(input, 0)
+	result, errors := Parse(input, 0)
 
 	if len(errors) > 0 {
 		t.Fatalf("parse errors: %v", errors)
 	}
 
-	if len(funcs) != 1 {
-		t.Fatalf("expected 1 function, got %d", len(funcs))
+	if len(result.Funcs) != 1 {
+		t.Fatalf("expected 1 function, got %d", len(result.Funcs))
 	}
 
-	fn := funcs[0]
+	fn := result.Funcs[0]
 	if fn.Name != "noop" {
 		t.Errorf("expected function name 'noop', got %q", fn.Name)
 	}
@@ -1011,13 +1011,13 @@ func TestParseStringInterpolation(t *testing.T) {
 		return "Hello {name}!"
 	}`
 
-	funcs, errors := Parse(input, 0)
+	result, errors := Parse(input, 0)
 
 	if len(errors) > 0 {
 		t.Fatalf("parse errors: %v", errors)
 	}
 
-	fn := funcs[0]
+	fn := result.Funcs[0]
 	returnStmt, ok := fn.Body[0].(*ast.ReturnStmt)
 	if !ok {
 		t.Fatalf("expected ReturnStmt, got %T", fn.Body[0])
@@ -1188,13 +1188,13 @@ func TestCurPrecedence(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		funcs, errors := Parse(tt.input, 0)
+		result, errors := Parse(tt.input, 0)
 
 		if len(errors) > 0 {
 			t.Fatalf("parse errors for %q: %v", tt.input, errors)
 		}
 
-		fn := funcs[0]
+		fn := result.Funcs[0]
 		returnStmt, ok := fn.Body[0].(*ast.ReturnStmt)
 		if !ok {
 			t.Fatalf("expected ReturnStmt, got %T", fn.Body[0])
@@ -1217,14 +1217,14 @@ func TestParseFuncParamsEmpty(t *testing.T) {
 		return nil
 	}`
 
-	funcs, errors := Parse(input, 0)
+	result, errors := Parse(input, 0)
 
 	if len(errors) > 0 {
 		t.Fatalf("parse errors: %v", errors)
 	}
 
-	if len(funcs[0].Params) != 0 {
-		t.Errorf("expected 0 params, got %d", len(funcs[0].Params))
+	if len(result.Funcs[0].Params) != 0 {
+		t.Errorf("expected 0 params, got %d", len(result.Funcs[0].Params))
 	}
 }
 
@@ -1233,13 +1233,13 @@ func TestParseFuncParamsMultiple(t *testing.T) {
 		return nil
 	}`
 
-	funcs, errors := Parse(input, 0)
+	result, errors := Parse(input, 0)
 
 	if len(errors) > 0 {
 		t.Fatalf("parse errors: %v", errors)
 	}
 
-	params := funcs[0].Params
+	params := result.Funcs[0].Params
 	if len(params) != 3 {
 		t.Fatalf("expected 3 params, got %d", len(params))
 	}
@@ -1260,13 +1260,13 @@ func TestParseFuncParamsWithStringType(t *testing.T) {
 		return false
 	}`
 
-	funcs, errors := Parse(input, 0)
+	result, errors := Parse(input, 0)
 
 	if len(errors) > 0 {
 		t.Fatalf("parse errors: %v", errors)
 	}
 
-	params := funcs[0].Params
+	params := result.Funcs[0].Params
 	if len(params) != 1 {
 		t.Fatalf("expected 1 param, got %d", len(params))
 	}
@@ -1283,14 +1283,14 @@ func TestExpectPeekTypeErrorKeyword(t *testing.T) {
 		return e
 	}`
 
-	funcs, errors := Parse(input, 0)
+	result, errors := Parse(input, 0)
 
 	if len(errors) > 0 {
 		t.Fatalf("parse errors: %v", errors)
 	}
 
-	if funcs[0].ReturnType != "error" {
-		t.Errorf("expected return type 'error', got %q", funcs[0].ReturnType)
+	if result.Funcs[0].ReturnType != "error" {
+		t.Errorf("expected return type 'error', got %q", result.Funcs[0].ReturnType)
 	}
 }
 
@@ -1302,15 +1302,15 @@ func TestParseLetWithTaskKeyword(t *testing.T) {
 		return nil
 	}`
 
-	funcs, errors := Parse(input, 0)
+	result, errors := Parse(input, 0)
 
 	if len(errors) > 0 {
 		t.Fatalf("parse errors: %v", errors)
 	}
 
-	letStmt, ok := funcs[0].Body[0].(*ast.LetStmt)
+	letStmt, ok := result.Funcs[0].Body[0].(*ast.LetStmt)
 	if !ok {
-		t.Fatalf("expected LetStmt, got %T", funcs[0].Body[0])
+		t.Fatalf("expected LetStmt, got %T", result.Funcs[0].Body[0])
 	}
 
 	if letStmt.Name != "task" {
@@ -1338,15 +1338,15 @@ func TestParseStructLiteralEmpty(t *testing.T) {
 		return nil
 	}`
 
-	funcs, errors := Parse(input, 0)
+	result, errors := Parse(input, 0)
 
 	if len(errors) > 0 {
 		t.Fatalf("parse errors: %v", errors)
 	}
 
-	letStmt, ok := funcs[0].Body[0].(*ast.LetStmt)
+	letStmt, ok := result.Funcs[0].Body[0].(*ast.LetStmt)
 	if !ok {
-		t.Fatalf("expected LetStmt, got %T", funcs[0].Body[0])
+		t.Fatalf("expected LetStmt, got %T", result.Funcs[0].Body[0])
 	}
 
 	structLit, ok := letStmt.Value.(*ast.StructLit)
@@ -1369,15 +1369,15 @@ func TestParseStructLiteralMultipleFields(t *testing.T) {
 		return nil
 	}`
 
-	funcs, errors := Parse(input, 0)
+	result, errors := Parse(input, 0)
 
 	if len(errors) > 0 {
 		t.Fatalf("parse errors: %v", errors)
 	}
 
-	letStmt, ok := funcs[0].Body[0].(*ast.LetStmt)
+	letStmt, ok := result.Funcs[0].Body[0].(*ast.LetStmt)
 	if !ok {
-		t.Fatalf("expected LetStmt, got %T", funcs[0].Body[0])
+		t.Fatalf("expected LetStmt, got %T", result.Funcs[0].Body[0])
 	}
 
 	structLit, ok := letStmt.Value.(*ast.StructLit)
@@ -1410,15 +1410,15 @@ func TestParseErrorExpressionWithIdentifier(t *testing.T) {
 		return error(msg)
 	}`
 
-	funcs, errors := Parse(input, 0)
+	result, errors := Parse(input, 0)
 
 	if len(errors) > 0 {
 		t.Fatalf("parse errors: %v", errors)
 	}
 
-	returnStmt, ok := funcs[0].Body[0].(*ast.ReturnStmt)
+	returnStmt, ok := result.Funcs[0].Body[0].(*ast.ReturnStmt)
 	if !ok {
-		t.Fatalf("expected ReturnStmt, got %T", funcs[0].Body[0])
+		t.Fatalf("expected ReturnStmt, got %T", result.Funcs[0].Body[0])
 	}
 
 	errorExpr, ok := returnStmt.Value.(*ast.ErrorExpr)
@@ -1441,15 +1441,15 @@ func TestParseErrorExpressionWithBinaryExpr(t *testing.T) {
 		return error(a + b)
 	}`
 
-	funcs, errors := Parse(input, 0)
+	result, errors := Parse(input, 0)
 
 	if len(errors) > 0 {
 		t.Fatalf("parse errors: %v", errors)
 	}
 
-	returnStmt, ok := funcs[0].Body[0].(*ast.ReturnStmt)
+	returnStmt, ok := result.Funcs[0].Body[0].(*ast.ReturnStmt)
 	if !ok {
-		t.Fatalf("expected ReturnStmt, got %T", funcs[0].Body[0])
+		t.Fatalf("expected ReturnStmt, got %T", result.Funcs[0].Body[0])
 	}
 
 	errorExpr, ok := returnStmt.Value.(*ast.ErrorExpr)
@@ -1470,15 +1470,15 @@ func TestParseCallExpressionNoArgs(t *testing.T) {
 		return result
 	}`
 
-	funcs, errors := Parse(input, 0)
+	result, errors := Parse(input, 0)
 
 	if len(errors) > 0 {
 		t.Fatalf("parse errors: %v", errors)
 	}
 
-	letStmt, ok := funcs[0].Body[0].(*ast.LetStmt)
+	letStmt, ok := result.Funcs[0].Body[0].(*ast.LetStmt)
 	if !ok {
-		t.Fatalf("expected LetStmt, got %T", funcs[0].Body[0])
+		t.Fatalf("expected LetStmt, got %T", result.Funcs[0].Body[0])
 	}
 
 	callExpr, ok := letStmt.Value.(*ast.CallExpr)
@@ -1497,15 +1497,15 @@ func TestParseCallExpressionMultipleArgs(t *testing.T) {
 		return result
 	}`
 
-	funcs, errors := Parse(input, 0)
+	result, errors := Parse(input, 0)
 
 	if len(errors) > 0 {
 		t.Fatalf("parse errors: %v", errors)
 	}
 
-	letStmt, ok := funcs[0].Body[0].(*ast.LetStmt)
+	letStmt, ok := result.Funcs[0].Body[0].(*ast.LetStmt)
 	if !ok {
-		t.Fatalf("expected LetStmt, got %T", funcs[0].Body[0])
+		t.Fatalf("expected LetStmt, got %T", result.Funcs[0].Body[0])
 	}
 
 	callExpr, ok := letStmt.Value.(*ast.CallExpr)
@@ -1524,15 +1524,15 @@ func TestParseMethodChaining(t *testing.T) {
 		return result
 	}`
 
-	funcs, errors := Parse(input, 0)
+	result, errors := Parse(input, 0)
 
 	if len(errors) > 0 {
 		t.Fatalf("parse errors: %v", errors)
 	}
 
-	letStmt, ok := funcs[0].Body[0].(*ast.LetStmt)
+	letStmt, ok := result.Funcs[0].Body[0].(*ast.LetStmt)
 	if !ok {
-		t.Fatalf("expected LetStmt, got %T", funcs[0].Body[0])
+		t.Fatalf("expected LetStmt, got %T", result.Funcs[0].Body[0])
 	}
 
 	// Should be: method3 call on (method2 call on (method1 call on obj))
@@ -1557,15 +1557,15 @@ func TestParseNestedCallExpressions(t *testing.T) {
 		return result
 	}`
 
-	funcs, errors := Parse(input, 0)
+	result, errors := Parse(input, 0)
 
 	if len(errors) > 0 {
 		t.Fatalf("parse errors: %v", errors)
 	}
 
-	letStmt, ok := funcs[0].Body[0].(*ast.LetStmt)
+	letStmt, ok := result.Funcs[0].Body[0].(*ast.LetStmt)
 	if !ok {
-		t.Fatalf("expected LetStmt, got %T", funcs[0].Body[0])
+		t.Fatalf("expected LetStmt, got %T", result.Funcs[0].Body[0])
 	}
 
 	outerCall, ok := letStmt.Value.(*ast.CallExpr)
@@ -1599,15 +1599,15 @@ func TestParseRenderExpressionEmpty(t *testing.T) {
 		return render()
 	}`
 
-	funcs, errors := Parse(input, 0)
+	result, errors := Parse(input, 0)
 
 	if len(errors) > 0 {
 		t.Fatalf("parse errors: %v", errors)
 	}
 
-	returnStmt, ok := funcs[0].Body[0].(*ast.ReturnStmt)
+	returnStmt, ok := result.Funcs[0].Body[0].(*ast.ReturnStmt)
 	if !ok {
-		t.Fatalf("expected ReturnStmt, got %T", funcs[0].Body[0])
+		t.Fatalf("expected ReturnStmt, got %T", result.Funcs[0].Body[0])
 	}
 
 	renderExpr, ok := returnStmt.Value.(*ast.RenderExpr)
@@ -1627,22 +1627,110 @@ func TestParseReturnAtEndOfBlock(t *testing.T) {
 		return nil
 	}`
 
-	funcs, errors := Parse(input, 0)
+	result, errors := Parse(input, 0)
 
 	if len(errors) > 0 {
 		t.Fatalf("parse errors: %v", errors)
 	}
 
-	if len(funcs[0].Body) != 2 {
-		t.Fatalf("expected 2 statements, got %d", len(funcs[0].Body))
+	if len(result.Funcs[0].Body) != 2 {
+		t.Fatalf("expected 2 statements, got %d", len(result.Funcs[0].Body))
 	}
 
-	returnStmt, ok := funcs[0].Body[1].(*ast.ReturnStmt)
+	returnStmt, ok := result.Funcs[0].Body[1].(*ast.ReturnStmt)
 	if !ok {
-		t.Fatalf("expected ReturnStmt, got %T", funcs[0].Body[1])
+		t.Fatalf("expected ReturnStmt, got %T", result.Funcs[0].Body[1])
 	}
 
 	if returnStmt.Value == nil {
 		t.Error("expected return value")
+	}
+}
+
+func TestParseModelInScriptBlock(t *testing.T) {
+	input := `model Task {
+		id:    uuid    @pk @default(uuid_v4)
+		title: string  @min(3)
+	}`
+
+	result, errors := Parse(input, 0)
+
+	if len(errors) > 0 {
+		t.Fatalf("parse errors: %v", errors)
+	}
+
+	if len(result.Models) != 1 {
+		t.Fatalf("expected 1 model, got %d", len(result.Models))
+	}
+
+	model := result.Models[0]
+	if model.Name != "Task" {
+		t.Errorf("expected model name 'Task', got %q", model.Name)
+	}
+
+	if len(model.Fields) != 2 {
+		t.Fatalf("expected 2 fields, got %d", len(model.Fields))
+	}
+
+	if model.Fields[0].Name != "id" {
+		t.Errorf("expected field name 'id', got %q", model.Fields[0].Name)
+	}
+}
+
+func TestParseServiceInScriptBlock(t *testing.T) {
+	input := `service Database {
+		provider: "postgres"
+		url:      string @env("DATABASE_URL")
+	}`
+
+	result, errors := Parse(input, 0)
+
+	if len(errors) > 0 {
+		t.Fatalf("parse errors: %v", errors)
+	}
+
+	if len(result.Services) != 1 {
+		t.Fatalf("expected 1 service, got %d", len(result.Services))
+	}
+
+	svc := result.Services[0]
+	if svc.Name != "Database" {
+		t.Errorf("expected service name 'Database', got %q", svc.Name)
+	}
+
+	if svc.Provider != "postgres" {
+		t.Errorf("expected provider 'postgres', got %q", svc.Provider)
+	}
+}
+
+func TestParseMixedDeclarationsInScriptBlock(t *testing.T) {
+	input := `model Task {
+		id: uuid @pk
+	}
+
+	service Database {
+		provider: "sqlite"
+	}
+
+	func toggle(id: uuid) error {
+		return nil
+	}`
+
+	result, errors := Parse(input, 0)
+
+	if len(errors) > 0 {
+		t.Fatalf("parse errors: %v", errors)
+	}
+
+	if len(result.Models) != 1 {
+		t.Errorf("expected 1 model, got %d", len(result.Models))
+	}
+
+	if len(result.Services) != 1 {
+		t.Errorf("expected 1 service, got %d", len(result.Services))
+	}
+
+	if len(result.Funcs) != 1 {
+		t.Errorf("expected 1 function, got %d", len(result.Funcs))
 	}
 }

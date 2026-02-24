@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"gmx/internal/compiler/ast"
 	"gmx/internal/compiler/lexer"
+	"gmx/internal/compiler/parser/shared"
 	"gmx/internal/compiler/token"
 	"strings"
 	"unicode"
@@ -57,8 +58,15 @@ type (
 	infixParseFn  func(ast.Expression) ast.Expression
 )
 
-// Parse takes the raw script source and returns parsed functions
-func Parse(source string, lineOffset int) ([]*ast.FuncDecl, []string) {
+// ParseResult contains all parsed declarations from a script block
+type ParseResult struct {
+	Models   []*ast.ModelDecl
+	Services []*ast.ServiceDecl
+	Funcs    []*ast.FuncDecl
+}
+
+// Parse takes the raw script source and returns parsed declarations (models, services, functions)
+func Parse(source string, lineOffset int) (*ParseResult, []string) {
 	l := lexer.New(source)
 	p := &Parser{
 		l:          l,
@@ -105,22 +113,43 @@ func Parse(source string, lineOffset int) ([]*ast.FuncDecl, []string) {
 	p.nextToken()
 	p.nextToken()
 
-	// Parse all top-level function declarations
-	funcs := []*ast.FuncDecl{}
+	// Parse all top-level declarations (model, service, func)
+	result := &ParseResult{
+		Models:   []*ast.ModelDecl{},
+		Services: []*ast.ServiceDecl{},
+		Funcs:    []*ast.FuncDecl{},
+	}
+
 	for p.curToken.Type != token.EOF {
-		if p.curToken.Type == token.FUNC {
+		switch p.curToken.Type {
+		case token.MODEL:
+			model := p.parseModelDecl()
+			if model != nil {
+				result.Models = append(result.Models, model)
+			}
+			// parseModelDecl already consumes the closing brace and moves past it
+
+		case token.SERVICE:
+			svc := p.parseServiceDecl()
+			if svc != nil {
+				result.Services = append(result.Services, svc)
+			}
+			// parseServiceDecl already consumes the closing brace and moves past it
+
+		case token.FUNC:
 			fn := p.parseFuncDecl()
 			if fn != nil {
-				funcs = append(funcs, fn)
+				result.Funcs = append(result.Funcs, fn)
 			}
 			p.nextToken() // Move past the closing brace
-		} else {
-			p.error(fmt.Sprintf("expected func declaration, got %s", p.curToken.Type))
+
+		default:
+			p.error(fmt.Sprintf("expected model, service, or func declaration, got %s", p.curToken.Type))
 			p.nextToken()
 		}
 	}
 
-	return funcs, p.errors
+	return result, p.errors
 }
 
 func (p *Parser) nextToken() {
@@ -787,4 +816,46 @@ func (p *Parser) parseCallExpression(left ast.Expression) ast.Expression {
 	}
 
 	return expr
+}
+
+// ============ MODEL/SERVICE PARSING (delegated to shared package) ============
+
+// parseModelDecl delegates model parsing to the shared package
+func (p *Parser) parseModelDecl() *ast.ModelDecl {
+	// Create a shared parser core that wraps our current state
+	core := shared.NewParserCoreFromTokens(p.l, p.curToken, p.peekToken)
+
+	// Delegate to shared package
+	model := core.ParseModelDecl()
+
+	// Sync our state back from the core
+	p.curToken = core.GetCurrentToken()
+	p.peekToken = core.GetPeekToken()
+
+	// Merge errors
+	for _, err := range core.Errors() {
+		p.errors = append(p.errors, err)
+	}
+
+	return model
+}
+
+// parseServiceDecl delegates service parsing to the shared package
+func (p *Parser) parseServiceDecl() *ast.ServiceDecl {
+	// Create a shared parser core that wraps our current state
+	core := shared.NewParserCoreFromTokens(p.l, p.curToken, p.peekToken)
+
+	// Delegate to shared package
+	svc := core.ParseServiceDecl()
+
+	// Sync our state back from the core
+	p.curToken = core.GetCurrentToken()
+	p.peekToken = core.GetPeekToken()
+
+	// Merge errors
+	for _, err := range core.Errors() {
+		p.errors = append(p.errors, err)
+	}
+
+	return svc
 }
