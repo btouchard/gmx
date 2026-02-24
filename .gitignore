@@ -20,7 +20,7 @@ go.work
 
 # GMX specific
 .gmx-out/
-gmx
+/gmx
 
 # IDE
 .vscode/
@@ -32,3 +32,11 @@ gmx
 # OS
 .DS_Store
 Thumbs.db
+/benchmarks.md
+/examples/demo.db
+/PARSER_ERROR_RECOVERY.md
+/PHASE2_SUMMARY.md
+/master-prompt.md
+/def.md
+/AUDIT_REPORT.md
+/ROADMAP.md

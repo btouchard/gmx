@@ -27,14 +27,14 @@ type TranspileResult struct {
 }
 
 type Transpiler struct {
-	buf          strings.Builder
-	sourceMap    *SourceMap
-	goLine       int      // current line in generated Go
-	indent       int      // indentation level
-	models       []string // known model names for ORM method detection
-	errDeclared  bool     // tracks if err variable has been declared in current scope
-	varTypes     map[string]string // tracks variable types for instance method detection
-	currentFunc  string   // current function name for context
+	buf         strings.Builder
+	sourceMap   *SourceMap
+	goLine      int               // current line in generated Go
+	indent      int               // indentation level
+	models      []string          // known model names for ORM method detection
+	errDeclared bool              // tracks if err variable has been declared in current scope
+	varTypes    map[string]string // tracks variable types for instance method detection
+	currentFunc string            // current function name for context
 }
 
 func NewTranspiler(modelNames []string) *Transpiler {
@@ -413,17 +413,34 @@ func (t *Transpiler) transpileRenderCall(call *ast.CallExpr) {
 	t.emitIndent()
 
 	if len(call.Args) == 1 {
-		// Single render
 		arg := t.transpileExpr(call.Args[0])
-		// Determine type name for template lookup
 		typeName := t.inferTypeName(call.Args[0])
-		t.emit("if err := renderFragment(ctx.Writer, %q, %s); err != nil {\n", typeName, arg)
-		t.indent++
-		t.emitIndent()
-		t.emit("return err\n")
-		t.indent--
-		t.emitIndent()
-		t.emit("}\n")
+
+		if t.isCollectionVar(call.Args[0]) {
+			// Collection: iterate and render each item
+			t.emit("for _, item := range %s {\n", arg)
+			t.indent++
+			t.emitIndent()
+			t.emit("if err := renderFragment(ctx.Writer, %q, item); err != nil {\n", typeName)
+			t.indent++
+			t.emitIndent()
+			t.emit("return err\n")
+			t.indent--
+			t.emitIndent()
+			t.emit("}\n")
+			t.indent--
+			t.emitIndent()
+			t.emit("}\n")
+		} else {
+			// Single render
+			t.emit("if err := renderFragment(ctx.Writer, %q, %s); err != nil {\n", typeName, arg)
+			t.indent++
+			t.emitIndent()
+			t.emit("return err\n")
+			t.indent--
+			t.emitIndent()
+			t.emit("}\n")
+		}
 	} else {
 		// Multiple renders (OOB)
 		for _, arg := range call.Args {
@@ -477,7 +494,11 @@ func (t *Transpiler) trackVarType(varName string, expr ast.Expression) {
 		if member, ok := e.Function.(*ast.MemberExpr); ok {
 			if ident, ok := member.Object.(*ast.Ident); ok {
 				if t.isModelType(ident.Name) {
-					t.varTypes[varName] = ident.Name
+					if member.Property == "all" {
+						t.varTypes[varName] = "[]" + ident.Name
+					} else {
+						t.varTypes[varName] = ident.Name
+					}
 				}
 			}
 		}
@@ -494,7 +515,8 @@ func (t *Transpiler) inferTypeName(expr ast.Expression) string {
 	case *ast.Ident:
 		// Check if we know the type
 		if typ, ok := t.varTypes[e.Name]; ok {
-			return typ
+			// Strip slice prefix for template name
+			return strings.TrimPrefix(typ, "[]")
 		}
 		return e.Name
 	case *ast.StructLit:
@@ -502,6 +524,15 @@ func (t *Transpiler) inferTypeName(expr ast.Expression) string {
 	default:
 		return "Unknown"
 	}
+}
+
+func (t *Transpiler) isCollectionVar(expr ast.Expression) bool {
+	if ident, ok := expr.(*ast.Ident); ok {
+		if typ, ok := t.varTypes[ident.Name]; ok {
+			return strings.HasPrefix(typ, "[]")
+		}
+	}
+	return false
 }
 
 func (t *Transpiler) endsWithReturn(body []ast.Statement) bool {
@@ -594,17 +625,34 @@ func (t *Transpiler) transpileRenderExpr(expr *ast.RenderExpr) {
 	t.emitIndent()
 
 	if len(expr.Args) == 1 {
-		// Single render
 		arg := t.transpileExpr(expr.Args[0])
-		// Determine type name for template lookup
 		typeName := t.inferTypeName(expr.Args[0])
-		t.emit("if err := renderFragment(ctx.Writer, %q, %s); err != nil {\n", typeName, arg)
-		t.indent++
-		t.emitIndent()
-		t.emit("return err\n")
-		t.indent--
-		t.emitIndent()
-		t.emit("}\n")
+
+		if t.isCollectionVar(expr.Args[0]) {
+			// Collection: iterate and render each item
+			t.emit("for _, item := range %s {\n", arg)
+			t.indent++
+			t.emitIndent()
+			t.emit("if err := renderFragment(ctx.Writer, %q, item); err != nil {\n", typeName)
+			t.indent++
+			t.emitIndent()
+			t.emit("return err\n")
+			t.indent--
+			t.emitIndent()
+			t.emit("}\n")
+			t.indent--
+			t.emitIndent()
+			t.emit("}\n")
+		} else {
+			// Single render
+			t.emit("if err := renderFragment(ctx.Writer, %q, %s); err != nil {\n", typeName, arg)
+			t.indent++
+			t.emitIndent()
+			t.emit("return err\n")
+			t.indent--
+			t.emitIndent()
+			t.emit("}\n")
+		}
 	} else {
 		// Multiple renders (OOB)
 		for _, arg := range expr.Args {

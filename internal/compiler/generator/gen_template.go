@@ -204,6 +204,11 @@ func (g *Generator) genTemplateConst(file *ast.GMXFile, components map[string]*r
 		htmlStr = html.String()
 	}
 
+	// Extract model range blocks into {{define}} sub-templates
+	if len(file.Models) > 0 {
+		htmlStr = g.extractModelFragments(htmlStr, file.Models)
+	}
+
 	// Append component template definitions
 	if len(components) > 0 {
 		htmlStr += "\n" + g.genComponentTemplates(components)
@@ -236,6 +241,82 @@ func escapeTemplateString(s string) string {
 		b.WriteString("`" + part + "`")
 	}
 	return b.String()
+}
+
+// extractModelFragments finds {{range .ModelNames}} blocks in the template,
+// extracts their body into {{define "Model"}} sub-templates, and replaces the
+// range body with {{template "Model" .}} so that renderFragment can reuse them.
+func (g *Generator) extractModelFragments(htmlStr string, models []*ast.ModelDecl) string {
+	var defines strings.Builder
+	defines.WriteString("\n<!-- ========== Model Fragment Templates ========== -->\n")
+	hasDefines := false
+
+	for _, model := range models {
+		// Simple plural: ModelName + "s" (matches genPageData convention)
+		plural := model.Name + "s"
+		rangeOpen := "{{range ." + plural + "}}"
+
+		startIdx := strings.Index(htmlStr, rangeOpen)
+		if startIdx == -1 {
+			continue
+		}
+
+		// Find the matching {{end}} by counting nesting depth
+		bodyStart := startIdx + len(rangeOpen)
+		depth := 1
+		pos := bodyStart
+		for pos < len(htmlStr) && depth > 0 {
+			nextOpen := strings.Index(htmlStr[pos:], "{{range ")
+			nextIf := strings.Index(htmlStr[pos:], "{{if ")
+			nextWith := strings.Index(htmlStr[pos:], "{{with ")
+			nextBlock := strings.Index(htmlStr[pos:], "{{block ")
+			nextEnd := strings.Index(htmlStr[pos:], "{{end}}")
+
+			if nextEnd == -1 {
+				break
+			}
+
+			// Find the nearest opening block before this {{end}}
+			minOpen := nextEnd // default: no opener before this end
+			for _, idx := range []int{nextOpen, nextIf, nextWith, nextBlock} {
+				if idx >= 0 && idx < minOpen {
+					minOpen = idx
+				}
+			}
+
+			if minOpen < nextEnd {
+				// An opening block comes before this {{end}}, increase depth
+				depth++
+				pos += minOpen + 2 // skip past "{{"
+			} else {
+				// This {{end}} closes a block
+				depth--
+				if depth == 0 {
+					bodyEnd := pos + nextEnd
+					body := htmlStr[bodyStart:bodyEnd]
+
+					// Create {{define "Model"}} block
+					defines.WriteString(fmt.Sprintf("\n{{define %q}}", model.Name))
+					defines.WriteString(body)
+					defines.WriteString("{{end}}\n")
+					hasDefines = true
+
+					// Replace range body with {{template "Model" .}}
+					replacement := rangeOpen + "{{template " + fmt.Sprintf("%q", model.Name) + " .}}" + "{{end}}"
+					original := htmlStr[startIdx : bodyEnd+len("{{end}}")]
+					htmlStr = strings.Replace(htmlStr, original, replacement, 1)
+					break
+				}
+				pos += nextEnd + len("{{end}}")
+			}
+		}
+	}
+
+	if hasDefines {
+		htmlStr += defines.String()
+	}
+
+	return htmlStr
 }
 
 // genComponentTemplates generates {{define}} blocks for each component
