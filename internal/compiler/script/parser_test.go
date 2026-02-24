@@ -1169,8 +1169,8 @@ func TestParseIfStatementWithoutBrace(t *testing.T) {
 // Tests for curPrecedence (66.7% coverage) and operator precedence
 func TestCurPrecedence(t *testing.T) {
 	tests := []struct {
-		input          string
-		expectedTopOp  string
+		input         string
+		expectedTopOp string
 	}{
 		{`func test() bool { return a || b }`, "||"},
 		{`func test() bool { return a && b }`, "&&"},

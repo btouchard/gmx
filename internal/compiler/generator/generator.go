@@ -2,10 +2,10 @@ package generator
 
 import (
 	"fmt"
-	"go/format"
 	"gmx/internal/compiler/ast"
 	"gmx/internal/compiler/resolver"
 	"gmx/internal/compiler/script"
+	"go/format"
 	"strings"
 )
 

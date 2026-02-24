@@ -963,7 +963,7 @@ func TestLexBacktickStrings(t *testing.T) {
 	l := New(input)
 
 	tests := []struct {
-		expectedType token.TokenType
+		expectedType  token.TokenType
 		wantMultiline bool
 	}{
 		{token.STRING, false},
@@ -1113,7 +1113,7 @@ func TestLexSingleAmpersandIllegal(t *testing.T) {
 	input := "a & b"
 	l := New(input)
 
-	_ = l.NextToken() // a
+	_ = l.NextToken()    // a
 	tok := l.NextToken() // &
 	if tok.Type != token.ILLEGAL {
 		t.Fatalf("expected single & to be ILLEGAL, got %s", tok.Type)
@@ -1124,7 +1124,7 @@ func TestLexSinglePipeIllegal(t *testing.T) {
 	input := "a | b"
 	l := New(input)
 
-	_ = l.NextToken() // a
+	_ = l.NextToken()    // a
 	tok := l.NextToken() // |
 	if tok.Type != token.ILLEGAL {
 		t.Fatalf("expected single | to be ILLEGAL, got %s", tok.Type)

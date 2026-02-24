@@ -157,7 +157,7 @@ Check out the [Getting Started Guide](guide/getting-started.md) to build your fi
 
 ## Status
 
-GMX is currently in **active development**. The compiler is functional with 81% test coverage. See the [AUDIT_REPORT.md](https://github.com/kolapsis/gmx/blob/main/AUDIT_REPORT.md) for detailed analysis.
+GMX is currently in **active development**. The compiler is functional with 81% test coverage. See the [AUDIT_REPORT.md](https://github.com/btouchard/gmx/blob/main/AUDIT_REPORT.md) for detailed analysis.
 
 **Production Readiness:**
 - ✅ Prototype/POC ready
@@ -166,4 +166,4 @@ GMX is currently in **active development**. The compiler is functional with 81% 
 
 ## License
 
-[MIT License](https://github.com/kolapsis/gmx/blob/main/LICENSE)
+[MIT License](https://github.com/btouchard/gmx/blob/main/LICENSE)

@@ -1493,8 +1493,8 @@ func TestZeroValue(t *testing.T) {
 		{"int", "0"},
 		{"bool", "false"},
 		{"error", "nil"},
-		{"float64", "nil"},  // default case
-		{"*User", "nil"},    // default case
+		{"float64", "nil"}, // default case
+		{"*User", "nil"},   // default case
 	}
 
 	for _, tt := range tests {

@@ -37,7 +37,7 @@ GMX doesn't hide Go or HTMX. It **makes them work together** with type safety, a
 
 ```bash
 # Install
-go install github.com/kolapsis/gmx/cmd/gmx@latest
+go install github.com/btouchard/gmx/cmd/gmx@latest
 
 # Create your first component
 cat > todo.gmx << 'EOF'
@@ -429,7 +429,7 @@ mkdocs serve
 GMX is open source and contributions are welcome.
 
 ```bash
-git clone https://github.com/kolapsis/gmx.git
+git clone https://github.com/btouchard/gmx.git
 cd gmx
 go test ./...                  # Run all tests (~91% coverage)
 go build -o gmx ./cmd/gmx     # Build the compiler

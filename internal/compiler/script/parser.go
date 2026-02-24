@@ -672,7 +672,7 @@ func (p *Parser) parseExpression(precedence int) ast.Expression {
 
 	// Stop at statement terminators
 	for !p.peekTokenIs(token.RBRACE) && !p.peekTokenIs(token.EOF) &&
-	    !p.peekTokenIs(token.SEMICOLON) && precedence < p.peekPrecedence() {
+		!p.peekTokenIs(token.SEMICOLON) && precedence < p.peekPrecedence() {
 		infix := p.infixParseFns[p.peekToken.Type]
 		if infix == nil {
 			return leftExp
@@ -973,9 +973,9 @@ func (p *Parser) parseCtxExpression() ast.Expression {
 
 func (p *Parser) parseBinaryExpression(left ast.Expression) ast.Expression {
 	expr := &ast.BinaryExpr{
-		Left:  left,
-		Op:    p.curToken.Literal,
-		Line:  p.curToken.Pos.Line + p.lineOffset,
+		Left: left,
+		Op:   p.curToken.Literal,
+		Line: p.curToken.Pos.Line + p.lineOffset,
 	}
 
 	precedence := p.curPrecedence()

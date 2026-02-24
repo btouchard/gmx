@@ -1063,7 +1063,7 @@ service EmailService {
 	}
 
 	svc := file.Services[0]
-	
+
 	if len(svc.Methods) != 2 {
 		t.Fatalf("expected 2 methods, got %d", len(svc.Methods))
 	}

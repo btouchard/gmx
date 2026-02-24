@@ -1185,8 +1185,8 @@ func TestTranspileTypeUUID(t *testing.T) {
 				Params: []*ast.Param{
 					{Name: "id", Type: "uuid"},
 				},
-				Body:   []ast.Statement{},
-				Line:   1,
+				Body: []ast.Statement{},
+				Line: 1,
 			},
 		},
 	}
@@ -1206,8 +1206,8 @@ func TestTranspileTypeInt(t *testing.T) {
 				Params: []*ast.Param{
 					{Name: "count", Type: "int"},
 				},
-				Body:   []ast.Statement{},
-				Line:   1,
+				Body: []ast.Statement{},
+				Line: 1,
 			},
 		},
 	}
@@ -1226,8 +1226,8 @@ func TestTranspileTypeBool(t *testing.T) {
 				Params: []*ast.Param{
 					{Name: "active", Type: "bool"},
 				},
-				Body:   []ast.Statement{},
-				Line:   1,
+				Body: []ast.Statement{},
+				Line: 1,
 			},
 		},
 	}
@@ -1246,8 +1246,8 @@ func TestTranspileTypeString(t *testing.T) {
 				Params: []*ast.Param{
 					{Name: "name", Type: "string"},
 				},
-				Body:   []ast.Statement{},
-				Line:   1,
+				Body: []ast.Statement{},
+				Line: 1,
 			},
 		},
 	}
@@ -1266,8 +1266,8 @@ func TestTranspileTypeModelPointer(t *testing.T) {
 				Params: []*ast.Param{
 					{Name: "task", Type: "Task"},
 				},
-				Body:   []ast.Statement{},
-				Line:   1,
+				Body: []ast.Statement{},
+				Line: 1,
 			},
 		},
 	}
@@ -1287,8 +1287,8 @@ func TestTranspileTypeUnknown(t *testing.T) {
 				Params: []*ast.Param{
 					{Name: "data", Type: "CustomType"},
 				},
-				Body:   []ast.Statement{},
-				Line:   1,
+				Body: []ast.Statement{},
+				Line: 1,
 			},
 		},
 	}

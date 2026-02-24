@@ -12,7 +12,7 @@ This guide will walk you through installing GMX and building your first applicat
 ### Option 1: Build from Source (Current)
 
 ```bash
-git clone https://github.com/kolapsis/gmx.git
+git clone https://github.com/btouchard/gmx.git
 cd gmx
 go build -o gmx cmd/gmx/main.go
 sudo mv gmx /usr/local/bin/
@@ -21,7 +21,7 @@ sudo mv gmx /usr/local/bin/
 ### Option 2: Go Install (Coming Soon)
 
 ```bash
-go install github.com/kolapsis/gmx/cmd/gmx@latest
+go install github.com/btouchard/gmx/cmd/gmx@latest
 ```
 
 Verify installation:
@@ -179,5 +179,5 @@ go get gorm.io/driver/sqlite
 
 ## Getting Help
 
-- **Issues:** [github.com/kolapsis/gmx/issues](https://github.com/kolapsis/gmx/issues)
-- **Discussions:** [github.com/kolapsis/gmx/discussions](https://github.com/kolapsis/gmx/discussions)
+- **Issues:** [github.com/btouchard/gmx/issues](https://github.com/btouchard/gmx/issues)
+- **Discussions:** [github.com/btouchard/gmx/discussions](https://github.com/btouchard/gmx/discussions)

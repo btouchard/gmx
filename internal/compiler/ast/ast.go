@@ -119,13 +119,13 @@ func (v *VarDecl) TokenLiteral() string {
 
 // ScriptBlock contains GMX Script code (TypeScript-inspired syntax)
 type ScriptBlock struct {
-	Source    string          // Raw source (preserved for fallback)
-	Imports   []*ImportDecl   // Parsed import declarations
-	Models    []*ModelDecl    // Parsed model declarations
-	Services  []*ServiceDecl  // Parsed service declarations
-	Vars      []*VarDecl      // Parsed top-level variable declarations
-	Funcs     []*FuncDecl     // Parsed functions
-	StartLine int             // Line offset in the .gmx file for source maps
+	Source    string         // Raw source (preserved for fallback)
+	Imports   []*ImportDecl  // Parsed import declarations
+	Models    []*ModelDecl   // Parsed model declarations
+	Services  []*ServiceDecl // Parsed service declarations
+	Vars      []*VarDecl     // Parsed top-level variable declarations
+	Funcs     []*FuncDecl    // Parsed functions
+	StartLine int            // Line offset in the .gmx file for source maps
 }
 
 func (s *ScriptBlock) TokenLiteral() string { return "script" }
@@ -134,7 +134,7 @@ func (s *ScriptBlock) TokenLiteral() string { return "script" }
 type FuncDecl struct {
 	Name       string
 	Params     []*Param
-	ReturnType string      // "error", "string", "bool", etc. Empty if void
+	ReturnType string // "error", "string", "bool", etc. Empty if void
 	Body       []Statement
 	Line       int // Source line for source maps
 }
