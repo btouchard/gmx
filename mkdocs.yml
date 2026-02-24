@@ -1,6 +1,6 @@
 site_name: GMX Documentation
 site_description: "GMX — Go + HTMX Transpiler Framework"
-site_url: https://gmx-lang.dev
+site_url: https://btouchard.github.io/gmx/
 repo_url: https://github.com/btouchard/gmx
 repo_name: btouchard/gmx
 

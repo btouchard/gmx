@@ -390,7 +390,7 @@ gmx fmt app.gmx components/*.gmx  # → format files in place
 
 ## Documentation
 
-Full documentation available at [gmx.dev](https://gmx.dev) (coming soon) or locally:
+Full documentation available at [btouchard.github.io/gmx](https://btouchard.github.io/gmx/) or locally:
 
 ```bash
 pip install mkdocs-material
