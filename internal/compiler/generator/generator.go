@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"go/format"
 	"gmx/internal/compiler/ast"
+	"gmx/internal/compiler/resolver"
 	"gmx/internal/compiler/script"
 	"strings"
 )
@@ -16,8 +17,21 @@ func New() *Generator {
 	return &Generator{}
 }
 
+// GenerateResolved generates Go code from a resolved GMX file with imports
+func (g *Generator) GenerateResolved(resolved *resolver.ResolvedFile) (string, error) {
+	// Use the internal method on the merged Main file with components
+	return g.generateWithComponents(resolved.Main, resolved.Components)
+}
+
 // Generate takes a GMXFile AST and produces complete, compilable Go source code
+// This method is kept for backward compatibility (single-file compilation)
 func (g *Generator) Generate(file *ast.GMXFile) (string, error) {
+	// No components for single-file compilation
+	return g.generateWithComponents(file, nil)
+}
+
+// generateWithComponents is the internal implementation that handles both single-file and multi-file compilation
+func (g *Generator) generateWithComponents(file *ast.GMXFile, components map[string]*resolver.ComponentInfo) (string, error) {
 	var b strings.Builder
 
 	// Compute routes ONCE at the beginning
@@ -39,6 +53,13 @@ func (g *Generator) Generate(file *ast.GMXFile) (string, error) {
 	helpers := g.genHelpers(file)
 	if helpers != "" {
 		b.WriteString(helpers)
+	}
+
+	// Variables (if any)
+	if len(file.Vars) > 0 {
+		b.WriteString("// ========== Variables ==========\n\n")
+		b.WriteString(g.genVars(file.Vars))
+		b.WriteString("\n")
 	}
 
 	// Models (if any)
@@ -77,7 +98,7 @@ func (g *Generator) Generate(file *ast.GMXFile) (string, error) {
 		b.WriteString("// ========== Template ==========\n\n")
 		b.WriteString(g.genTemplateInit(routes))
 		b.WriteString("\n")
-		b.WriteString(g.genTemplateConst(file))
+		b.WriteString(g.genTemplateConst(file, components))
 		b.WriteString("\n")
 	}
 

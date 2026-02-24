@@ -3,6 +3,7 @@ package generator
 import (
 	"fmt"
 	"gmx/internal/compiler/ast"
+	"gmx/internal/compiler/resolver"
 	"regexp"
 	"strings"
 )
@@ -61,7 +62,7 @@ func (g *Generator) genTemplateInit(routes map[string]string) string {
 }
 
 // genTemplateConst generates the pageTemplate constant with full HTML structure
-func (g *Generator) genTemplateConst(file *ast.GMXFile) string {
+func (g *Generator) genTemplateConst(file *ast.GMXFile, components map[string]*resolver.ComponentInfo) string {
 	var b strings.Builder
 
 	// Check if the template already contains a full HTML page
@@ -78,7 +79,16 @@ func (g *Generator) genTemplateConst(file *ast.GMXFile) string {
 
 	if hasFullHTML {
 		// Template already has full HTML - use it as-is, only inject CSS if needed
+		// Merge component styles
+		componentStyles := g.genComponentStyles(components)
+		allStyles := ""
 		if file.Style != nil && file.Style.Source != "" {
+			allStyles = file.Style.Source + "\n" + componentStyles
+		} else {
+			allStyles = componentStyles
+		}
+
+		if allStyles != "" {
 			// Find </head> and inject style before it
 			headEndIdx := strings.Index(templateSrc, "</head>")
 			if headEndIdx == -1 {
@@ -91,7 +101,7 @@ func (g *Generator) genTemplateConst(file *ast.GMXFile) string {
 				html.WriteString(templateSrc[:headEndIdx])
 				html.WriteString("  <style>\n")
 				html.WriteString("  /* GMX Scoped Styles */\n")
-				html.WriteString("  " + file.Style.Source + "\n")
+				html.WriteString("  " + allStyles + "\n")
 				html.WriteString("  </style>\n")
 				// Inject CSRF protection
 				html.WriteString("  <meta name=\"csrf-token\" content=\"{{.CSRFToken}}\">\n")
@@ -151,11 +161,20 @@ func (g *Generator) genTemplateConst(file *ast.GMXFile) string {
 		html.WriteString("    <script src=\"https://cdn.tailwindcss.com\"></script>\n")
 		html.WriteString("    <script src=\"https://unpkg.com/htmx.org@2.0.4\"></script>\n")
 
-		// Inject CSS if present
+		// Merge component styles
+		componentStyles := g.genComponentStyles(components)
+		allStyles := ""
 		if file.Style != nil && file.Style.Source != "" {
+			allStyles = file.Style.Source + "\n" + componentStyles
+		} else {
+			allStyles = componentStyles
+		}
+
+		// Inject CSS if present
+		if allStyles != "" {
 			html.WriteString("    <style>\n")
 			html.WriteString("    /* GMX Scoped Styles */\n")
-			html.WriteString("    " + file.Style.Source + "\n")
+			html.WriteString("    " + allStyles + "\n")
 			html.WriteString("    </style>\n")
 		}
 
@@ -185,6 +204,11 @@ func (g *Generator) genTemplateConst(file *ast.GMXFile) string {
 		htmlStr = html.String()
 	}
 
+	// Append component template definitions
+	if len(components) > 0 {
+		htmlStr += "\n" + g.genComponentTemplates(components)
+	}
+
 	// Use const with string concatenation to handle backticks
 	b.WriteString("const pageTemplate = ")
 	b.WriteString(escapeTemplateString(htmlStr))
@@ -211,5 +235,49 @@ func escapeTemplateString(s string) string {
 		// Add the part as a raw string
 		b.WriteString("`" + part + "`")
 	}
+	return b.String()
+}
+
+// genComponentTemplates generates {{define}} blocks for each component
+func (g *Generator) genComponentTemplates(components map[string]*resolver.ComponentInfo) string {
+	if len(components) == 0 {
+		return ""
+	}
+
+	var b strings.Builder
+	b.WriteString("\n<!-- ========== Component Templates ========== -->\n\n")
+
+	for name, info := range components {
+		if info.File.Template == nil {
+			continue
+		}
+
+		b.WriteString(fmt.Sprintf("<!-- Component: %s (from %s) -->\n", name, info.Path))
+		b.WriteString(fmt.Sprintf("{{define %q}}\n", name))
+		b.WriteString(info.File.Template.Source)
+		b.WriteString("\n{{end}}\n\n")
+	}
+
+	return b.String()
+}
+
+// genComponentStyles merges all component styles
+func (g *Generator) genComponentStyles(components map[string]*resolver.ComponentInfo) string {
+	if len(components) == 0 {
+		return ""
+	}
+
+	var b strings.Builder
+
+	for name, info := range components {
+		if info.File.Style == nil || info.File.Style.Source == "" {
+			continue
+		}
+
+		b.WriteString(fmt.Sprintf("\n/* Component: %s */\n", name))
+		b.WriteString(info.File.Style.Source)
+		b.WriteString("\n")
+	}
+
 	return b.String()
 }
