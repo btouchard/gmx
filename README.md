@@ -9,6 +9,7 @@
 <p align="center">Write Vue-style single-file components. Ship a single Go binary.<br/>No Node. No JS bundler. No runtime. Just Go + HTMX.</p>
 
 <p align="center">
+  <a href="https://btouchard.github.io/gmx/playground/"><strong>▶ Try it online</strong></a> •
   <a href="#quickstart">Quickstart</a> •
   <a href="#why-gmx">Why GMX</a> •
   <a href="#the-gmx-file">The .gmx File</a> •
@@ -16,6 +17,14 @@
   <a href="#documentation">Docs</a> •
   <a href="#roadmap">Roadmap</a>
 </p>
+
+---
+
+## Playground
+
+**[Try GMX in your browser →](https://btouchard.github.io/gmx/playground/)**
+
+Write `.gmx` code and see the generated Go output instantly — no install needed.
 
 ---
 
