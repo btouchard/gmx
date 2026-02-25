@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GMX Playground</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Toolbar -->
+    <div class="toolbar">
+      <div class="toolbar-left">
+        <div class="logo">
+          <span class="logo-text">GMX</span>
+          <span class="logo-subtitle">Playground</span>
+        </div>
+      </div>
+
+      <div class="toolbar-center">
+        <select id="example-selector" class="example-selector">
+          <option value="minimal">Minimal Example</option>
+          <option value="task-app">Task App (Full Demo)</option>
+          <option value="services">Services Example</option>
+        </select>
+      </div>
+
+      <div class="toolbar-right">
+        <label class="auto-compile-toggle">
+          <input type="checkbox" id="auto-compile" checked>
+          <span>Auto-compile</span>
+        </label>
+        <button id="compile-btn" class="btn-compile">Compile</button>
+        <span id="compile-time" class="compile-time"></span>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="content">
+      <!-- Editor Panes -->
+      <div class="panes">
+        <div class="pane pane-left">
+          <div class="pane-header">
+            <span class="pane-title">.gmx source</span>
+          </div>
+          <div id="gmx-editor" class="editor-container"></div>
+        </div>
+
+        <div class="resizer" id="resizer"></div>
+
+        <div class="pane pane-right">
+          <div class="pane-header">
+            <span class="pane-title">Generated Go</span>
+          </div>
+          <div id="go-editor" class="editor-container"></div>
+        </div>
+      </div>
+
+      <!-- Error Panel -->
+      <div id="error-panel" class="error-panel hidden">
+        <div class="error-header">
+          <span class="error-title">Compilation Errors</span>
+          <button id="close-errors" class="close-errors">&times;</button>
+        </div>
+        <div id="error-content" class="error-content"></div>
+      </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading" class="loading">
+      <div class="loading-spinner"></div>
+      <div class="loading-text">Loading WASM runtime...</div>
+    </div>
+  </div>
+
+  <!-- WASM Support -->
+  <script src="wasm_exec.js"></script>
+
+  <!-- Main Application -->
+  <script type="module" src="playground.js"></script>
+</body>
+</html>

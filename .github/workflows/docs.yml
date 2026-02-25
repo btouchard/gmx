@@ -6,6 +6,7 @@ on:
     paths:
       - 'docs/**'
       - 'mkdocs.yml'
+      - 'playground/**'
   workflow_dispatch:
 
 permissions:
@@ -22,6 +23,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+      - name: Build playground WASM
+        run: GOOS=js GOARCH=wasm go build -o docs/playground/gmx.wasm ./playground/
+      - name: Copy wasm_exec.js
+        run: cp "$(go env GOROOT)/misc/wasm/wasm_exec.js" docs/playground/
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
