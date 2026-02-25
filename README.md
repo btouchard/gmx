@@ -4,7 +4,7 @@
   <img src="https://img.shields.io/badge/Single_Binary-black?style=for-the-badge" alt="Single Binary" />
 </p>
 
-<h1 align="center">GMX</h1>
+<h1 align="center"><img src="./assets/logo-large.png" alt="GMX"></h1>
 <p align="center"><strong>The full-stack Go framework that thinks in components.</strong></p>
 <p align="center">Write Vue-style single-file components. Ship a single Go binary.<br/>No Node. No JS bundler. No runtime. Just Go + HTMX.</p>
 
