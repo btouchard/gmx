@@ -29,7 +29,17 @@ jobs:
       - name: Build playground WASM
         run: GOOS=js GOARCH=wasm go build -o docs/playground/gmx.wasm ./playground/
       - name: Copy wasm_exec.js
-        run: cp "$(go env GOROOT)/misc/wasm/wasm_exec.js" docs/playground/
+        run: |
+          GOROOT_DIR="$(go env GOROOT)"
+          if [ -f "$GOROOT_DIR/lib/wasm/wasm_exec.js" ]; then
+            cp "$GOROOT_DIR/lib/wasm/wasm_exec.js" docs/playground/
+          elif [ -f "$GOROOT_DIR/misc/wasm/wasm_exec.js" ]; then
+            cp "$GOROOT_DIR/misc/wasm/wasm_exec.js" docs/playground/
+          else
+            echo "Error: wasm_exec.js not found in GOROOT=$GOROOT_DIR"
+            find "$GOROOT_DIR" -name "wasm_exec.js" 2>/dev/null
+            exit 1
+          fi
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
